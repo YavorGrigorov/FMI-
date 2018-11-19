@@ -31,8 +31,8 @@ function Pikar
     
     z = y_0; zz = yy_0;
     for k=1:N
-        y_k = y0 + cumtrapz(x, ff(x, z));
-        yy_k = y0 + cumtrapz(xx, ff(xx, zz));
+        y_k = y0 + cumtrapz(x, ff(x, z));%S[a,b](f(x))dx ~ Sum[k=1:n](f(xk) - f(xk-1))*(xk - xk-1)/<число> 
+        yy_k = y0 + cumtrapz(xx, ff(xx, zz));% Метода на трапците (Числ. методи)
         plot(x, z, 'k', xx, zz, 'k')
         
         z = y_k; zz = yy_k;
