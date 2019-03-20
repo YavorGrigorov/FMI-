@@ -1,10 +1,25 @@
 Applied robotics 
 
+
 	Projects talk
 	
 	1. The coffee machine is approved 
 		Additional ideas /* the lecturer*/ : 
-			- Image recognition: recognizes the person and makes the coffee that he wants
+			- Image recognition: recognizes the person and makes the coffee that he wants (OpenCV)
 			- Sugar/Milk dispenser
 			
 	2. Have to make a text document describing what the project is and what it will use
+		Doc Template:
+			- Perceptions 	- what parts you use 
+			- Actions 		- what can it do
+			- Goals 		- what you want it to do
+			- Environment 	- where can it do, what it can persieve from the environment
+			
+			
+	3. Links:
+		- https://opencv.org/
+		- second page of the lectures
+		
+		
+		
+		
