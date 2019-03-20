@@ -1,0 +1,10 @@
+Applied robotics 
+
+	Projects talk
+	
+	1. The coffee machine is approved 
+		Additional ideas /* the lecturer*/ : 
+			- Image recognition: recognizes the person and makes the coffee that he wants
+			- Sugar/Milk dispenser
+			
+	2. Have to make a text document describing what the project is and what it will use
