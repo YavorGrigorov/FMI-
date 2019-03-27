@@ -22,3 +22,6 @@ Y - output
     A3 -> 10
     A4 -> 11
     
+    Right -> 3
+    Left -> 12
+    
