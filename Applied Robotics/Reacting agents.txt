@@ -1,0 +1,24 @@
+    
+    
+    transistors: 
+        -ground (out, -)
+        -drain (in, +)
+        -gate  (where the outer current comes)
+        
+        
+    Arduino motor control tutorial 
+https://www.engr.uvic.ca/~mech350/Core-Files/Arduino-Motor-Control-Tutorial.pdf
+    Anotha one :D
+https://www.instructables.com/id/How-to-use-the-L293D-Motor-Driver-Arduino-Tutorial/
+
+A - controlling input
+Y - output
+
+
+    Regulating the speed through pulse-width modulation
+    
+    A1 -> 5
+    A2 -> 6
+    A3 -> 10
+    A4 -> 11
+    
