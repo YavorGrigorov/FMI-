@@ -1,0 +1,39 @@
+
+	
+-----Procedure // function
+	
+	Basically the same as a function in everything else
+	
+	Consumes time for saving the state of the registers before 
+		the call and for redirecting the ptr to the func
+	But save on code mem
+	
+	NEAR :-: jump in curr segment
+	FAR  :-: in other
+	
+	example:
+		NAME	PROC /* default: NEAR */
+				//instructions
+		NAME	ENDP
+		
+	EXTERN <args <name>:<type>, ..> //NEAR, FAR, ...
+	
+-----Macros
+	
+	Eats code mem but is faster to execute
+	
+	Same idea (kanda) as in C++
+	
+	example:
+	NAME	MACRO <var 1>, ..
+			//instructions
+	NAME	ENDM
+	
+	
+	
+-----Assembly and Higher level Languages
+	
+	// search for Compiler explorer
+	
+	
+	
