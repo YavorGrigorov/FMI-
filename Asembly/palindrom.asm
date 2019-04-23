@@ -15,7 +15,7 @@
 		xor ax, ax;
 		
 		read:
-		mov ah, 1	; some light reading
+		mov ah, 01h	; some light reading
 		int 21h		;
 		
 		; all the checks
@@ -56,7 +56,7 @@
 		mov al, 1; false
 		
 		theEnd:
-		mov ah, 2;
+		mov ah, 02h;
 		int 21h	; print
 		
 	end main
