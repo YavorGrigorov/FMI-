@@ -1,4 +1,7 @@
 	
+	; read a 5 char string and see if it's palindrom
+	; read word alfa, space, beta and return if equal
+	; read 10 digits and see if they are ordered accending // if that's how it's spelled
 	.stack 5
 	
 	.data
