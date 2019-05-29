@@ -25,3 +25,15 @@ Y - output
     Right -> 3
     Left -> 12
     
+    //////////////////
+    
+    Agents comunication language:
+    http://www.fipa.org/repository/aclspecs.html
+    kqml //?
+    
+    Video processing:
+        OpenCV
+        
+    Planning:
+       STRIPS
+    
