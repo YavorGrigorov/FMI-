@@ -36,4 +36,4 @@ Y - output
         
     Planning:
        STRIPS
-    
+    See: EHCL // enforced hill climb search
