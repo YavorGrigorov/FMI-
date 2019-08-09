@@ -1,0 +1,40 @@
+
+
+	Logic operators
+	
+	<AND, OR, XOR> <dst>, <src>
+		takes from src and writes in dst
+	NOT <dst>
+		flips all bits e.g. 1 -> 0 & 0 -> 1
+	TEST <dst>, <src>
+		doesn't change dst and src and does the AND operation and writes the res in ZF, SF, PF
+		
+		*Pairity flag (PF) - 
+	BT <src>, <n>
+		TEST on the n-th bit and sets the CF
+	BTS <src>, <n>
+		Bit test and set the n-th bit to 1
+	BTR <src>, <n>
+		Bit test and set the n-th bit to 0
+	BTC <src>, <n>
+		Bit test and set the n-th bit to it's oposit (e.g. 1  -> 0, 0 -> 1)
+	
+----------------------------------------------------------------------------------------------------
+	
+	Shift commands: // fuck it, in the pdf are the rest
+	
+	Logical shift 	-- i -> void -> 0  // e.g. 1001 --> 0100
+	Arithmetic 		-- ignores the eldest bit and does a shift
+	Cyclic 			-- takes the last and puts it in first and the other way round
+		ex: right by 1	::	1001 --> 1100
+	Carry 			-- i --> CF and void --> 0
+	
+	
+	// usefull links
+	
+	https://www.fermimn.edu.it/linux/quarta/x86/index.htm
+	https://books.google.bg/books?id=C3_WIQOYE2EC&pg=PA113&lpg=PA113&dq=assembly+bts+instruction&source=bl&ots=G9RhWEb5yN&sig=ACfU3U39uMV6v_ysVBDAWpQkDcbJgMq4wg&hl=bg&sa=X&ved=2ahUKEwiWnv-60dThAhUMzYUKHQECCxYQ6AEwBnoECAkQAQ#v=onepage&q=assembly%20bts%20instruction&f=false
+	https://books.google.bg/books?id=7vkYCwAAQBAJ&pg=PA307&lpg=PA307&dq=assembly+bts+instruction&source=bl&ots=PRS7br6vSu&sig=ACfU3U0pHVh4mE0qUbMr-G3LEbvhrUZ9VA&hl=bg&sa=X&ved=2ahUKEwiWnv-60dThAhUMzYUKHQECCxYQ6AEwB3oECAYQAQ#v=onepage&q=assembly%20bts%20instruction&f=false
+	
+	
+	
