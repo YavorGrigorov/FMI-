@@ -1,2 +1,2 @@
- This needs to be fixed
+ Repo with stuff that I'm doing during my university years.
  
