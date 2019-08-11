@@ -134,7 +134,7 @@ unsigned createHeader(std::ofstream& file, size_t width, size_t height) {
 	// BM Signature
 	file.put(0x42);
 	file.put(0x4d);
-
+	
 	// Size
 	// Each row has to end on a dword (4 bytes)
 	unsigned padding = calcPadding(width);

@@ -20,6 +20,13 @@
 
 /// 	Third way
 	
+	A* , heuristic : dist between pts
+	1. Go through the image and find all relevant pts
+	2. Find relative centers of those objects
+	3. Run A* from start to any of the exits (maybe all of them at onece)
+	4. See if you need to go through doors to get to any of the exits
+		4.1. If yes look for the keys and get paths
+	5. Draw path
 	Find another way..
 */
 
@@ -343,6 +350,93 @@ ObjContainer np::fillSourceArrayFromStart(SourceArray& map, bool includeDoors) {
 	clog << "Filling array from enterence point\n";
 	Point start = findStart(map);
 	return fillSourceArrayFromPt(map, start, includeDoors);
+}
+
+
+/////////////// A* algorithm //////////////////////////////////
+
+typedef unsigned dist_t;
+#define MAX_DIST 0xFFFFFFFF;
+typedef std::pair<const Point&, dist_t> PointDistToExit; //needs a better name
+typedef std::pair<const Point&, ObjType> ObjCenter;
+
+#include <queue>
+
+bool less(const PointDistToExit& lhs, const PointDistToExit& rhs) {
+	return lhs.second < rhs.second;
+}
+
+bool greater(const PointDistToExit& lhs, const PointDistToExit& rhs) {
+	return lhs.second > rhs.second;
+}
+
+std::vector<ObjCenter> getObjCenters(SourceArray& map);
+
+dist_t calcDist(const Point& fr, const Point& to) {
+	coord_t x = (to.x - fr.x)*(to.x - fr.x);
+	coord_t y = (to.y - fr.y)*(to.y - fr.y);
+	return x + y;
+}
+
+PointDistToExit getClosestExitDist(const Point& pt, const std::vector<const Point&>& exits) {
+	dist_t minDist = MAX_DIST;
+	for (size_t i = 0; i < exits.size(); ++i) {
+		dist_t currDist = calcDist(pt, exits[i]);
+		if (currDist < minDist) minDist = currDist;
+	}
+	return std::make_pair(pt, minDist);
+}
+
+std::vector<const Point&> getExits(const std::vector<ObjCenter>& objects) {
+	std::vector<const Point&> exits;
+	for (size_t i = 0; i < objects.size(); ++i)
+		if (objects[i].second == Exit)
+			exits.push_back(objects[i].first);
+	return exits;
+}
+
+const Point& getStart(const std::vector<ObjCenter>& objects) {
+	for (size_t i = 0; i < objects.size(); ++i) {
+		if (objects[i].second == Enterence) return objects[i].first;
+	}
+	return Point();
+}
+
+void solveMazeAStar(SourceArray& map) {
+	std::vector<ObjCenter> objects = getObjCenters(map);
+
+	const Point& start = getStart(objects);
+	std::vector<const Point&> exits = getExits(objects);
+
+	std::priority_queue<PointDistToExit> toScan;
+	toScan.push(getClosestExitDist(start, exits));
+
+	bool exitFound = false;
+	PointDistToExit curr = toScan.top();
+
+	while (true) {
+		curr = toScan.top();
+		toScan.pop();
+
+		if (curr.second == 0) break;
+
+		//Adding adjacent points // I really need to fix that function... !!!!
+		const Point& pt = curr.first;
+		for (int i = 0; i < offsetSize; ++i) {
+			Point neighbour = pt + offsets[i];
+			if (map.inBounds(neighbour) &&
+				!visited(neighbour, map) &&
+				map.getPtColor(neighbour.x, neighbour.y) != WALL_COLOR)
+			{
+				markVisit(neighbour, map);
+				map.setPtSource(neighbour.x, neighbour.y, pt);
+				toScan.push(getClosestExitDist(neighbour, exits));
+			}
+		}
+
+	}
+
+
 }
 
 

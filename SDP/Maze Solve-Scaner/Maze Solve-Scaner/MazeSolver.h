@@ -45,6 +45,7 @@ namespace np {
 	///		through them
 	//
 	ObjContainer fillSourceArrayFromStart(SourceArray& map, bool includeDoors = true);
+
 }
 
 

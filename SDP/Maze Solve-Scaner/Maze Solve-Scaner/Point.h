@@ -48,7 +48,14 @@ namespace np {
 		
 		
 	};
-	
+
+	template <class T>
+	std::hash<Point>{
+		size_t operator()(const Point& pt) {
+			return std::hash<coord_t>(pt.x + pt.y + pt.color);
+		}
+	};
+
 	//
 	// Why, oh why are logic operations with higher priority than bitwise...
 	static bool sameColor(const Point& lhs, const Point& rhs){
