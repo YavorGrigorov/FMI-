@@ -46,6 +46,15 @@ namespace np {
 	//
 	ObjContainer fillSourceArrayFromStart(SourceArray& map, bool includeDoors = true);
 
+	//
+	//	Finds the shortest path from pt from to pt to using A* algorithm
+	//	 with heuristic the dist from the current point to the to point. //needs to be written better
+	//
+	int setPathFromToObjective(const Point&from, const Point& to, SourceArray& map);
+
+	int setPathFromStartToAnyExit(SourceArray& map);
+
+
 }
 
 

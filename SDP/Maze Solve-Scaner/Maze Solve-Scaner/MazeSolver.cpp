@@ -355,8 +355,6 @@ ObjContainer np::fillSourceArrayFromStart(SourceArray& map, bool includeDoors) {
 
 /////////////// A* algorithm //////////////////////////////////
 
-typedef unsigned dist_t;
-#define MAX_DIST 0xFFFFFFFF;
 typedef std::pair<const Point&, dist_t> PointDistToExit; //needs a better name
 typedef std::pair<const Point&, ObjType> ObjCenter;
 
@@ -370,18 +368,16 @@ bool greater(const PointDistToExit& lhs, const PointDistToExit& rhs) {
 	return lhs.second > rhs.second;
 }
 
-std::vector<ObjCenter> getObjCenters(SourceArray& map);
-
 dist_t calcDist(const Point& fr, const Point& to) {
 	coord_t x = (to.x - fr.x)*(to.x - fr.x);
 	coord_t y = (to.y - fr.y)*(to.y - fr.y);
 	return x + y;
 }
 
-PointDistToExit getClosestExitDist(const Point& pt, const std::vector<const Point&>& exits) {
+PointDistToExit getClosestObjectiveDist(const Point& pt, const std::vector<const Point*>& objectives) {
 	dist_t minDist = MAX_DIST;
-	for (size_t i = 0; i < exits.size(); ++i) {
-		dist_t currDist = calcDist(pt, exits[i]);
+	for (size_t i = 0; i < objectives.size(); ++i) {
+		dist_t currDist = calcDist(pt, *objectives[i]);
 		if (currDist < minDist) minDist = currDist;
 	}
 	return std::make_pair(pt, minDist);
@@ -402,23 +398,35 @@ const Point& getStart(const std::vector<ObjCenter>& objects) {
 	return Point();
 }
 
-void solveMazeAStar(SourceArray& map) {
-	std::vector<ObjCenter> objects = getObjCenters(map);
+//
+//
+//
+//Somehow get objects from array
+std::vector<const Point*> getObjects(SourceArray& map) {
+	for (auto iter = map.beg(); iter != map.end(); ++iter) {
+		//check if iter is with the right color..
+		if (iter->color != WALL_COLOR && iter->color != CORIDOR_COLOR && iter->color != ENTERENCE_COLOR) {
+			//skip object somehow..
+		}
+	}
+}
 
-	const Point& start = getStart(objects);
-	std::vector<const Point&> exits = getExits(objects);
+//A*c
+int np::setPathFromToObjective(const Point&from, const Point& to, SourceArray& map) {
+	//Validation
+	if (!map.inBounds(from) && !map.inBounds(to)) return 1;
 
 	std::priority_queue<PointDistToExit> toScan;
-	toScan.push(getClosestExitDist(start, exits));
+	toScan.push(std::make_pair(from, calcDist(from, to)));
 
-	bool exitFound = false;
+	bool objectiveFound = false;
 	PointDistToExit curr = toScan.top();
 
-	while (true) {
+	while (!toScan.empty()) {
 		curr = toScan.top();
 		toScan.pop();
 
-		if (curr.second == 0) break;
+		if (curr.second == 0) return 0;
 
 		//Adding adjacent points // I really need to fix that function... !!!!
 		const Point& pt = curr.first;
@@ -430,13 +438,22 @@ void solveMazeAStar(SourceArray& map) {
 			{
 				markVisit(neighbour, map);
 				map.setPtSource(neighbour.x, neighbour.y, pt);
-				toScan.push(getClosestExitDist(neighbour, exits));
+				toScan.push(std::make_pair(neighbour, calcDist(neighbour, to)));
 			}
 		}
 
 	}
 
+	return 2;
+}
 
+
+int np::setPathFromStartToAnyExit(SourceArray & map) {
+	Point start = findStart(map);
+	
+	std::vector<const Point*> objects = getObjects(map);
+
+	return 1;
 }
 
 

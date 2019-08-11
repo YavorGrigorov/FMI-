@@ -7,6 +7,10 @@
 namespace np {
 	typedef int coord_t;
 	typedef unsigned color_t;
+
+#define MAX_DIST 0xFFFFFFFF
+	typedef unsigned dist_t;
+
 	struct Point{
 		coord_t x, y;
 		color_t color;
@@ -66,5 +70,48 @@ namespace np {
 		return (rhs | 0xFF000000) == (lhs | 0xFF000000);
 	}
 }
+
+//I don't know why I added this
+//struct dist_t {
+//	unsigned d;
+//
+//	dist_t(unsigned d = MAX_DIST) : d(d) {};
+//
+//	bool operator==(const dist_t& rhs) const;
+//	bool operator!=(const dist_t& rhs) const;
+//	bool operator<(const dist_t& rhs) const;
+//	bool operator<=(const dist_t& rhs) const;
+//	bool operator>(const dist_t& rhs) const;
+//	bool operator>=(const dist_t& rhs) const;
+//
+//	dist_t& operator+=(const dist_t& rhs);
+//	dist_t operator+(const dist_t& rhs) const;
+//
+//	dist_t& operator-=(const dist_t& rhs);
+//	dist_t operator-(const dist_t& rhs) const;
+//
+//	dist_t& operator*=(const dist_t& rhs);
+//	dist_t operator*(const dist_t& rhs) const;
+//
+//	dist_t& operator/=(const dist_t& rhs);
+//	dist_t operator/(const dist_t& rhs) const;
+//
+//	operator int(int i) { return d };
+//};
+
+
+
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
 

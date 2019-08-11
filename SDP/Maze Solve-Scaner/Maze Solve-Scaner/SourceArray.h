@@ -13,9 +13,6 @@
 using std::vector;
 
 namespace np {
-	typedef unsigned dist_t;
-#define MAX_DIST 0xFFFFFFFF;
-
 	class SourceArray {
 	public:
 		SourceArray(size_t width = 0, size_t height = 0);
@@ -30,6 +27,7 @@ namespace np {
 
 		const Point& getPtSource(const coord_t& x, const coord_t& y) const;
 		const color_t& getPtColor(const coord_t& x, const coord_t& y) const;
+		//dist_t getPtDistFrStart(const coord_t& x, const coord_t& y) const;
 
 		bool inBounds(const Point& pt) const;
 		bool inBounds(const coord_t& x, const coord_t& y) const;
@@ -47,7 +45,8 @@ namespace np {
 		ConstIterator cend() const;
 
 	private:
-		vector<vector< std::pair<Point, dist_t> > arr;//the void* idea doesn't work with resizing (address)
+		//vector<vector< std::pair<Point, dist_t> >> arr;//the void* idea doesn't work with resizing (address)
+		vector<vector< Point>> arr;//the void* idea doesn't work with resizing (address)
 		
 	};
 }

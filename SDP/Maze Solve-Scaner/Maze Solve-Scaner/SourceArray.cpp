@@ -38,10 +38,10 @@ size_t SourceArray::getWidth() const {
 void SourceArray::setPtSource(const coord_t& x, const coord_t& y, const Point& source) {
 	clog << " Setting point (" << x << " , " << y << ") source";
 	if (inBounds(x, y) && inBounds(source)) {
-		clog << " from (" << arr[x][y].first.x << " , " << arr[x][y].first.y << ") to ("
+		clog << " from (" << arr[x][y].x << " , " << arr[x][y].y << ") to ("
 			<< x << " , " << y << ") \n";
-		arr[x][y].first.x = source.x;
-		arr[x][y].first.y = source.y;
+		arr[x][y].x = source.x;
+		arr[x][y].y = source.y;
 	}
 	else clog << " Failed :: Point out of bounds\n";
 }
@@ -50,7 +50,7 @@ void SourceArray::setPtColor(const coord_t& x, const coord_t& y, unsigned color)
 	clog << " Setting point (" << x << " , " << y << ") color";
 
 	if (inBounds(x, y)) {
-		clog << " from " << std::hex << arr[x][y].first.color 
+		clog << " from " << std::hex << arr[x][y].color 
 			<< " to " << color << std::dec << std::endl;
 		arr[x][y].color = color;
 	}
@@ -60,12 +60,12 @@ void SourceArray::setPtColor(const coord_t& x, const coord_t& y, unsigned color)
 
 const color_t& SourceArray::getPtColor(const coord_t& x, const coord_t& y) const {
 	if (inBounds(x, y))
-		return arr[x][y].first.color;
+		return arr[x][y].color;
 }
 
 const Point& SourceArray::getPtSource(const coord_t& x, const coord_t& y) const {
 	if (inBounds(x, y))
-		return arr[x][y].first;
+		return arr[x][y];
 }
 
 bool SourceArray::inBounds(const coord_t& x, const coord_t& y) const {

@@ -39,12 +39,13 @@ int main(int argc, char* argv[]) {
 	Status s = loadBmp(argv[1], map);
 	if (s != ALL_OK) return s;
 
+	np::setPathFromToObjective();
 
-	np::ObjContainer identifiedObj = np::fillSourceArrayFromStart(map);
-
-	for (size_t i = 0; i < identifiedObj.size(); ++i) {
-		drawPath(map, identifiedObj[i].first);
-	}
+	//np::ObjContainer identifiedObj = np::fillSourceArrayFromStart(map);
+	//
+	//for (size_t i = 0; i < identifiedObj.size(); ++i) {
+	//	drawPath(map, identifiedObj[i].first);
+	//}
 	//for (np::coord_t x = 0, y = 0;
 	//	x < map.getWidth() && y < map.getHeight();
 	//	++x, ++y)
