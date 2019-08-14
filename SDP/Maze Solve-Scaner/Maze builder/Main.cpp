@@ -1,6 +1,6 @@
 
-#include "C:\Users\Yavka\source\repos\FMI\Data Structures and Algorithms\Project\Maze Solve-Scaner\Maze Solve-Scaner\ImageLoader.h"
-#include "C:\Users\Yavka\source\repos\FMI\Data Structures and Algorithms\Project\Maze Solve-Scaner\Maze Solve-Scaner\MazeRules.h"
+#include "C:\Users\Yavka\source\repos\FMI\FMI GitHub\FMI-\SDP\Maze Solve-Scaner\Maze Solve-Scaner\ImageLoader.h"
+#include "C:\Users\Yavka\source\repos\FMI\FMI GitHub\FMI-\SDP\Maze Solve-Scaner\Maze Solve-Scaner\MazeRules.h"
 #include "vector"
 #include <random>
 #include <ctime>

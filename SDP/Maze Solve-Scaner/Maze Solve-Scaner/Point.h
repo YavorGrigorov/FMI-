@@ -7,16 +7,17 @@
 namespace np {
 	typedef int coord_t;
 	typedef unsigned color_t;
+	typedef unsigned dist_t;
 
 #define MAX_DIST 0xFFFFFFFF
-	typedef unsigned dist_t;
 
 	struct Point{
 		coord_t x, y;
 		color_t color;
-		
+		dist_t distFromStart;
+
 		Point(coord_t x = -1, coord_t y = -1, color_t color = 0xFF000000) 
-			: x(x), y(y), color(color) {}
+			: x(x), y(y), color(color), distFromStart(MAX_DIST) {}
 		
 		bool operator==(const Point& rhs){
 			return 	x == rhs.x 	&&
@@ -53,12 +54,12 @@ namespace np {
 		
 	};
 
-	template <class T>
-	std::hash<Point>{
-		size_t operator()(const Point& pt) {
-			return std::hash<coord_t>(pt.x + pt.y + pt.color);
-		}
-	};
+	//template <class T>
+	//std::hash<Point>{
+	//	size_t operator()(const Point& pt) {
+	//		return std::hash<coord_t>(pt.x + pt.y + pt.color);
+	//	}
+	//};
 
 	//
 	// Why, oh why are logic operations with higher priority than bitwise...
@@ -66,7 +67,7 @@ namespace np {
 		return (lhs.color & 0x00FFFFFF) == (rhs.color & 0x00FFFFFF);
 	}
 
-	static bool cmpColor(color_t rhs, color_t lhs) {
+	static bool sameColor(color_t rhs, color_t lhs) {
 		return (rhs | 0xFF000000) == (lhs | 0xFF000000);
 	}
 }

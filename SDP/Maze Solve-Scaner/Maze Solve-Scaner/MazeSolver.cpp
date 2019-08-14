@@ -43,17 +43,46 @@
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
 
+//Another header
+// Needs more work
+#define LOG_MAP map 
+#define LOG_POINT(Pt) clog	<< " ( " << (Pt).x << " , " << (Pt).y << ") color "  \
+							<< std::hex << LOG_MAP.getPtColor(Pt.x, Pt.y)  << std::dec \
+					<< " dist to Start " << LOG_MAP.getPtDistFrStart(Pt.x, Pt.y) << std::endl
+#define LOG_MAX_HEAP_TOP(T) LOG_POINT(T.first); clog << "	dist to Objective " << T.second << std::endl
+#define LOG_A_STAR_END_CONDITION(T , Pt ,Map) clog	<< T.second << " == 0 || " \
+													<< std::hex \
+													<< Map.getPtColor(T.first.x, T.first.y) \
+													<< " == " << Map.getPtColor(Pt.x, Pt.y) \
+													<< std::dec \
+													<< std::endl
+
+
 
 
 #include "MazeSolver.h"
 #include <iostream>
 
+#include <queue>
+#include <unordered_map> //See if you need this
 //I might need a graph class and I should use the last HW
 //  to get the path that needs taking....
 using namespace np;
 using std::clog;
 
+typedef std::pair<Point, dist_t> PointDistToExit; //needs a better name
+typedef std::pair<Point, ObjType> ObjCenter; //this idea is dead, for now
 
+
+#define NO_DOORS false
+
+template<>
+struct std::hash<np::Point> {
+	size_t operator()(const np::Point& p) {
+		return std::hash<coord_t>{}(p.x + p.y);
+	}
+};
+typedef std::unordered_map<np::Point, Path> EdgeArr;
 /////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////// Utility functions //////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +105,7 @@ static const Point offsets[offsetSize] = {
 
 static void markVisit(const Point& pt, SourceArray& map) {
 	clog << " Marking pt (" << pt.x << " , " << pt.y << ") as visited\n";
-	map.setPtColor(pt.x, pt.y, (pt.color & 0x00FFFFFF));
+	map.setPtColor(pt.x, pt.y, (map.getPtColor(pt.x, pt.y) & 0x00FFFFFF));
 }
 
 //
@@ -89,7 +118,7 @@ static bool visited(const Point& pt, SourceArray& map) {
 	return c == 0;
 }
 
-static Point checkHeight(const Point& pt, const SourceArray& map) {
+static Point checkWidth(const Point& pt, const SourceArray& map) {
 	coord_t yTop = pt.y + 1;
 	coord_t yBot = pt.y - 1;
 
@@ -97,28 +126,26 @@ static Point checkHeight(const Point& pt, const SourceArray& map) {
 	bool reachedBot = false;
 
 	while (	yTop > yBot &&
-			yTop < map.getHeight() && yBot >= 0 &&
-			!reachedTop && !reachedBot) {
-
-		if (cmpColor(map.getPtColor(pt.x, yTop), pt.color))
+			(!reachedTop || !reachedBot)) {//contradiction, I know; this needs to be fixed..
+		if (yTop < map.getWidth() && sameColor(map.getPtColor(pt.x, yTop), pt.color))
 			++yTop;
 		else reachedTop = true;
-		if (cmpColor(map.getPtColor(pt.x, yBot), pt.color))
+		if (yBot >= 0 && sameColor(map.getPtColor(pt.x, yBot), pt.color))
 			--yBot;
 		else reachedBot = true;
 	}
 	--yTop;
 	++yBot;
 
-	Point top;
+	Point bot;
 	if (yTop > yBot && yTop - yBot == KEY_HEIGHT) {
-		top = pt;
-		top.y = yTop;
+		bot = pt;
+		bot.y = yBot;
 	}
-	return top;
+	return bot;
 }
 
-static Point checkWidth(const Point& pt, const SourceArray& map) {
+static Point checkHeight(const Point& pt, const SourceArray& map) {
 	coord_t xRight = pt.x + 1;
 	coord_t xLeft  = pt.x - 1;
 
@@ -126,13 +153,11 @@ static Point checkWidth(const Point& pt, const SourceArray& map) {
 	bool reachedRight = false;
 
 	while (xRight > xLeft &&
-		xRight < map.getWidth() && xLeft >= 0 &&
-		!reachedRight && !reachedLeft) {
-
-		if (cmpColor(map.getPtColor(xRight, pt.y), pt.color))
+		(!reachedRight || !reachedLeft)) {
+		if (xRight < map.getHeight() && sameColor(map.getPtColor(xRight, pt.y), pt.color))
 			++xRight;
 		else reachedRight = true;
-		if (cmpColor(map.getPtColor(xLeft, pt.y), pt.color))
+		if (xLeft >= 0 && sameColor(map.getPtColor(xLeft, pt.y), pt.color))
 			--xLeft;
 		else reachedLeft = true;
 	}
@@ -147,50 +172,53 @@ static Point checkWidth(const Point& pt, const SourceArray& map) {
 	return left;
 }
 
-static bool isFull(const Point& topLeft, const SourceArray& map) {
-	for (coord_t x = topLeft.x; x < map.getWidth(); ++x)
-		for (coord_t y = topLeft.y; y < map.getHeight(); ++y)
-			if (!map.inBounds(x, y) || cmpColor(map.getPtColor(x, y), topLeft.color))
+static bool isFull(const Point& botLeft, const SourceArray& map) {
+	if (!map.inBounds(botLeft)) return false;
+	for (coord_t x = botLeft.x; x < botLeft.x + KEY_HEIGHT; ++x)
+		for (coord_t y = botLeft.y; y < botLeft.y + KEY_WIDTH; ++y)
+			if (!sameColor(map.getPtColor(x, y), botLeft.color))
 				return false;
 	return true;
 }
 
-//ugly but, that's what i can think of right now
-static bool isSquare(const Point& topLeft, const SourceArray& map) {
-	coord_t leftX = topLeft.x - 1;
-	coord_t rightX = topLeft.x + KEY_WIDTH + 1;
-	coord_t topY = topLeft.y + 1;
-	coord_t botY = topLeft.y - KEY_HEIGHT - 1;
+static bool isSquare(const Point& botLeft, const SourceArray& map) {
+	if (!map.inBounds(botLeft)) return false;
+
+	coord_t leftX = botLeft.x - 1;
+	coord_t rightX = botLeft.x + KEY_WIDTH + 1;
+	coord_t topY = botLeft.y + KEY_HEIGHT + 1;
+	coord_t botY = botLeft.y - 1;
 
 	for (coord_t i = botY; i <= topY; ++i) {
 		if (map.inBounds(leftX, i) &&
-			!cmpColor(map.getPtColor(leftX, i), topLeft.color))
+			sameColor(map.getPtColor(leftX, i), botLeft.color))
 			return false;
 		if (map.inBounds(rightX, i) &&
-			!cmpColor(map.getPtColor(rightX, i), topLeft.color))
+			sameColor(map.getPtColor(rightX, i), botLeft.color))
 			return false;
 	}
 	
 	for (coord_t i = leftX; i <= rightX; ++i) {
 		if (map.inBounds(i, topY) && 
-			!cmpColor(map.getPtColor(i, topY), topLeft.color))
+			sameColor(map.getPtColor(i, topY), botLeft.color))
 			return false;
 		if (map.inBounds(i, botY) &&
-			!cmpColor(map.getPtColor(i, botY), topLeft.color))
+			sameColor(map.getPtColor(i, botY), botLeft.color))
 			return false;
 	}
 
 	return true;
 }
 
-static ObjType checkShape(const SourceArray& map, Point& pt){
+static ObjType checkShape(const SourceArray& map, const Point& pt){
 	
-	Point topLeft = checkHeight(pt, map);
-	if (!map.inBounds(topLeft)) return Door;
-	topLeft = checkWidth(topLeft, map);
-	if (!map.inBounds(topLeft)) return Door;
+	Point botLeft = checkWidth(pt, map);
+	if (!map.inBounds(botLeft)) return Door;
 
-	if (!isFull(topLeft, map) || !isSquare(topLeft, map))
+	botLeft = checkHeight(botLeft, map);
+	if (!map.inBounds(botLeft)) return Door;
+
+	if (!isFull(botLeft, map) || !isSquare(botLeft, map))
 		return Door;
 
 	return Key;
@@ -200,12 +228,13 @@ static ObjType checkShape(const SourceArray& map, Point& pt){
 	
 static ObjType identifyObj(const SourceArray& map, const Point& start) {
 
-	Point topLeft = start;
-	color_t objColor = topLeft.color;
-	if ((objColor | 0xFF000000) == EXIT_COLOR) return Exit;
-	if ((objColor | 0xFF000000) == WALL_COLOR) return Wall;
+	color_t objColor = start.color;
+	
+	if (sameColor(objColor,EXIT_COLOR)) return Exit;
+	if (sameColor(objColor, WALL_COLOR)) return Wall;
+	if (sameColor(objColor, ENTERENCE_COLOR)) return Enterence;
 
-	return checkShape(map, topLeft);
+	return checkShape(map, start);
 }
 
 static Point findStart(const SourceArray& map) {
@@ -223,32 +252,35 @@ static Point findStart(const SourceArray& map) {
 
 // BFS_VISIT_SAMECOLOR and AddAdjecent are basically the same
 //	TODO::fix
-static void BFS_Visit_SameColor(SourceArray& map, const Point& curr, const Point& source, std::queue<Point>& toBeScanned, std::queue<Point>& borders) {
-	if (visited(curr, map)) return;
-	clog << " Point not visited\n";
+static void BFS_Visit_SameColor(SourceArray& map, const Point& curr, std::queue<Point>& toBeScanned, std::queue<Point>& borders) {
+	//if (visited(curr, map)) return;
+	//markVisit(curr, map);
+	//clog << "	Point not visited\n";
 
-	clog << " Adding neighbours : ";
+	clog << "	Adding neighbours : \n";
 	for (size_t i = 0; i < offsetSize; ++i) {
 		Point neighbour(curr.x + offsets[i].x , curr.y + offsets[i].y);
-		if(!map.inBounds(neighbour) || visited(neighbour, map)) continue;
+		if (!map.inBounds(neighbour)) continue;
 		
-		//all points in the object and it's outer border will have the same source
-		map.setPtSource(neighbour.x, neighbour.y, source);
+		map.setPtSource(neighbour.x, neighbour.y, curr);
 		neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
 		
+		if(visited(neighbour, map)) continue;
+		markVisit(neighbour, map);
 		// check if it's part of the obj
 		if (sameColor(neighbour, curr)) {
-			clog << "\n to scan (" << neighbour.x << " , " << neighbour.y << ")";
+			clog << "		to scan (" << neighbour.x << " , " << neighbour.y << ")\n";
 			toBeScanned.push(neighbour);
 		}
 		else {
-			clog << "\n to borders (" << neighbour.x << " , " << neighbour.y << ")";
+			clog << "		to borders (" << neighbour.x << " , " << neighbour.y << ")\n";
 			borders.push(neighbour);
 		}
 	}
 	
-	markVisit(curr, map); 
 }
+
+
 
 // This is basically BFS with the idea of
 //	getting the borders of an object
@@ -260,31 +292,45 @@ static void bypassObject(SourceArray& map, const Point& start, std::queue<Point>
 
 	while (!toBeScanned.empty()) {
 		Point& curr = toBeScanned.front();
-		
-		clog << " Scanning pt (" << curr.x << " , " << curr.y << ")\n";
-		BFS_Visit_SameColor(map, curr, start, toBeScanned, toBeScannedBFS);
 
+		clog << "	Scanning ";
+		LOG_POINT(curr);
+		clog << std::endl;
+
+		BFS_Visit_SameColor(map, curr, toBeScanned, toBeScannedBFS);
 		toBeScanned.pop();
 	}
+	clog << "  Finished bypass\n";
+
 }
 
-
-
+// TODO:: template wifht handle
 void addAdjacent(SourceArray& map, const Point& pt, std::queue<Point>& toScan){
-	clog << " Adding adjecent pts :";
+	clog << "	Adding adjecent pts :\n";
+
 	for(int i = 0; i < offsetSize; ++i){
 		Point neighbour = pt + offsets[i];
-		if (map.inBounds(neighbour) && !visited(neighbour, map)) {
-			neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
-
-			clog << "\n(" << neighbour.x << " , " << neighbour.y << ") color "
-				<< std::hex << neighbour.color << std::dec;
+		
+		if (!map.inBounds(neighbour)) continue;
+		map.setPtSource(neighbour.x, neighbour.y, pt);
 			
-			map.setPtSource(neighbour.x, neighbour.y, pt);
+		neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
+		if(!visited(neighbour, map)) {
+			markVisit(neighbour, map);
+			LOG_POINT(neighbour);
 			toScan.push(neighbour);
 		}
 	}
+
 	clog << std::endl;
+}
+
+
+bool passable(color_t color, const std::vector<color_t>& unpassable) {
+	if (sameColor(color,WALL_COLOR) )return false;
+	for (size_t i = 0; i < unpassable.size(); ++i)
+		if (sameColor(color, unpassable[i])) return false;
+	return true;
 }
 
 
@@ -297,47 +343,57 @@ void addAdjacent(SourceArray& map, const Point& pt, std::queue<Point>& toScan){
 //there are going to be several ways to go about this
 
 
+ObjContainer fillSourceArrayFromPt(SourceArray& map, const Point& start, const std::vector<color_t>& unpassable, std::vector<Point>& unpassDoors, bool includeDoors){
+	ObjContainer identifiedObj;
+	if (!map.inBounds(start) || start.color == WALL_COLOR) return identifiedObj;
 
-ObjContainer np::fillSourceArrayFromPt(SourceArray& map, const Point& start, bool includeDoors){
-	
 	clog << " Filling source array from pt : (" << start.x << " , " << start.y << ")\n";
 	clog << (includeDoors ? " Including doors" : " Not including doors") << std::endl;
 
+	//map.setPtDistFromStart(start.x, start.y, 0);
+	markVisit(start, map);
+
 	std::queue<Point> toScan;
-	bypassObject(map, start, toScan);
-
-	//testing
-	ObjContainer identifiedObj;
-
-	while(!toScan.empty()){
-		Point curr = toScan.front();
-		
-		clog << " Scanning pt (" << curr.x << " , " << curr.y << ") color "
-			<< std::hex << curr.color  << std::dec << "\n";
-
-		if(!visited(curr, map)){ //if all goes well this should always be true
-			clog << " Not visited\n";
-			
-			if (curr.color == CORIDOR_COLOR) {
-				clog << " pt is part of coridor\n";
-				addAdjacent(map, curr, toScan);
-			}
-			else if (curr.color != WALL_COLOR) {
-				ObjType t = identifyObj(map, curr); // to be worked on .. ALOt
-				
-				clog << " pt is " << (t == Key ? "key" : "door") << std::endl;
-
-				if (t != Door || includeDoors) {
-					bypassObject(map, curr, toScan);
-					
-					identifiedObj.push_back(std::make_pair(curr, t));
-				}
-			}
-			
-			markVisit(curr, map);
-		}
-		clog << " Removing pt from queue\n";
+	if(start.color != CORIDOR_COLOR)
+		bypassObject(map, start, toScan); //Bypassing start //It's more for convinice for the logging
+	//Fixing results
+	for (size_t i = 0; i < toScan.size(); ++i) {
+		map.setPtDistFromStart(toScan.front().x, toScan.front().y, start.distFromStart + 1);
+		toScan.push(toScan.front());
 		toScan.pop();
+	}
+
+	while (!toScan.empty()) {
+		Point curr = toScan.front();
+		toScan.pop();
+
+		clog << " Scanning ";
+		LOG_POINT(curr);
+		clog << std::endl;
+
+		if (sameColor(curr.color, WALL_COLOR)) continue;
+		//markVisit(curr, map);
+		clog << " Not wall\n";
+
+		if (sameColor(curr.color,CORIDOR_COLOR)) {
+			clog << " Is coridor\n";
+			addAdjacent(map, curr, toScan);
+		}
+		else {
+			ObjType t = identifyObj(map, curr);
+			clog << " Is " << (t == Key ? "key" : "door") << std::endl;
+
+			if (t != Door || (includeDoors && passable(curr.color, unpassable))) {//t == Door && inlcude == true
+				clog << " Bypassing\n";
+				size_t oldQueSize = toScan.size();
+				bypassObject(map, curr, toScan);
+				//maybe
+				if(oldQueSize != toScan.size())
+					identifiedObj.push_back(std::make_pair(curr, t));
+			}
+			else unpassDoors.push_back(curr);
+		}
+		clog << "  Finished scanning pt. Left to scan " << toScan.size() << std::endl;
 	}
 
 	clog << "Finished filling\n";
@@ -346,27 +402,25 @@ ObjContainer np::fillSourceArrayFromPt(SourceArray& map, const Point& start, boo
 	//in Th this works
 }
 
-ObjContainer np::fillSourceArrayFromStart(SourceArray& map, bool includeDoors) {
+ObjContainer np::fillSourceArrayFromPt(SourceArray& map, const Point& start, const std::vector<color_t>& unpassable, bool includeDoors) {
+	std::vector<np::Point> unpassDoors;
+	return ::fillSourceArrayFromPt(map, start, unpassable, unpassDoors, includeDoors);
+}
+
+
+ObjContainer np::fillSourceArrayFromStart(SourceArray& map, const std::vector<color_t>& unpassable, bool includeDoors) {
 	clog << "Filling array from enterence point\n";
 	Point start = findStart(map);
-	return fillSourceArrayFromPt(map, start, includeDoors);
+	map.setPtDistFromStart(start.x, start.y, 0);
+
+	ObjContainer identifiedObj = fillSourceArrayFromPt(map, start, unpassable, includeDoors);
+
+	identifiedObj.push_back(std::make_pair(start, Enterence));
+	std::swap(identifiedObj[0], identifiedObj.back());
+
+	return identifiedObj;
 }
 
-
-/////////////// A* algorithm //////////////////////////////////
-
-typedef std::pair<const Point&, dist_t> PointDistToExit; //needs a better name
-typedef std::pair<const Point&, ObjType> ObjCenter;
-
-#include <queue>
-
-bool less(const PointDistToExit& lhs, const PointDistToExit& rhs) {
-	return lhs.second < rhs.second;
-}
-
-bool greater(const PointDistToExit& lhs, const PointDistToExit& rhs) {
-	return lhs.second > rhs.second;
-}
 
 dist_t calcDist(const Point& fr, const Point& to) {
 	coord_t x = (to.x - fr.x)*(to.x - fr.x);
@@ -374,88 +428,355 @@ dist_t calcDist(const Point& fr, const Point& to) {
 	return x + y;
 }
 
-PointDistToExit getClosestObjectiveDist(const Point& pt, const std::vector<const Point*>& objectives) {
-	dist_t minDist = MAX_DIST;
-	for (size_t i = 0; i < objectives.size(); ++i) {
-		dist_t currDist = calcDist(pt, *objectives[i]);
-		if (currDist < minDist) minDist = currDist;
+bool partOfKey(const np::Point& pt, const std::vector<const np::Point*>& keys) {
+	if (sameColor(pt.color, EXIT_COLOR) ||
+		sameColor(pt.color, WALL_COLOR) ||
+		sameColor(pt.color, ENTERENCE_COLOR) ||
+		sameColor(pt.color, CORIDOR_COLOR)) return false;
+
+	for (size_t i = 0; i < keys.size(); ++i) {
+		if (sameColor(*keys[i], pt))
+			if (calcDist(pt, *keys[i]) <= KEY_HEIGHT*KEY_HEIGHT + KEY_WIDTH*KEY_WIDTH) return true;
 	}
-	return std::make_pair(pt, minDist);
+	return false;
 }
 
-std::vector<const Point&> getExits(const std::vector<ObjCenter>& objects) {
-	std::vector<const Point&> exits;
-	for (size_t i = 0; i < objects.size(); ++i)
-		if (objects[i].second == Exit)
-			exits.push_back(objects[i].first);
-	return exits;
-}
 
-const Point& getStart(const std::vector<ObjCenter>& objects) {
-	for (size_t i = 0; i < objects.size(); ++i) {
-		if (objects[i].second == Enterence) return objects[i].first;
+Path getPathTo(const np::Point& to, const SourceArray& map) {
+	Path p;
+	//I really need to fix that Source array..
+	Point curr = to;
+	while (map.inBounds(curr)) {
+		p.push_back(map.clonePt(curr.x, curr.y));
+		curr = map.clonePtSource(curr.x, curr.y);
 	}
-	return Point();
+	return p;
 }
 
-//
-//
-//
-//Somehow get objects from array
-std::vector<const Point*> getObjects(SourceArray& map) {
-	for (auto iter = map.beg(); iter != map.end(); ++iter) {
-		//check if iter is with the right color..
-		if (iter->color != WALL_COLOR && iter->color != CORIDOR_COLOR && iter->color != ENTERENCE_COLOR) {
-			//skip object somehow..
-		}
+struct less {
+	int operator()(const PointDistToExit& lhs, const PointDistToExit& rhs) {
+		return lhs.second < rhs.second;
 	}
-}
+};
 
-//A*c
-int np::setPathFromToObjective(const Point&from, const Point& to, SourceArray& map) {
+struct greater {
+	int operator()(const PointDistToExit& lhs, const PointDistToExit& rhs) {
+		return lhs.second > rhs.second;
+	}
+};
+
+/////////////// A* algorithm //////////////////////////////////
+
+
+//PointDistToExit getClosestObjectiveDist(const PointDistToExit& pt, const std::vector<const Point*>& objectives) {
+//	PointDistToExit res = pt;
+//
+//	dist_t minDist = MAX_DIST;
+//	for (size_t i = 0; i < objectives.size(); ++i) {
+//		dist_t currDist = calcDist(pt.first, *objectives[i]);
+//		if (currDist < minDist) minDist = currDist;
+//	}
+//
+//	res.second = minDist;
+//	return res;
+//}
+
+
+//A*
+int np::setPathFromTo(const Point&from, const Point& to, SourceArray& map, const std::vector<color_t>& unpassable) {
 	//Validation
 	if (!map.inBounds(from) && !map.inBounds(to)) return 1;
+	clog << "  Starting A*\n";
 
-	std::priority_queue<PointDistToExit> toScan;
+	markVisit(from, map);
+	map.setPtDistFromStart(from.x, from.y, 0);
+
+	std::priority_queue<PointDistToExit, std::vector<PointDistToExit>, greater> toScan;
+
 	toScan.push(std::make_pair(from, calcDist(from, to)));
 
 	bool objectiveFound = false;
-	PointDistToExit curr = toScan.top();
+	PointDistToExit curr;// = toScan.top();
 
 	while (!toScan.empty()) {
 		curr = toScan.top();
 		toScan.pop();
 
-		if (curr.second == 0) return 0;
+		clog << " Scanning top : \n";
+		LOG_MAX_HEAP_TOP(curr);
+		LOG_A_STAR_END_CONDITION(curr, to, map);
+
+		if (curr.second == 0 ||
+			sameColor(map.getPtColor(curr.first.x, curr.first.y), map.getPtColor(to.x, to.y))) 
+		{
+			clog << "	FOUND PATH\n";
+			map.setPtSource(to.x, to.y, curr.first);
+			return 0;
+		}
 
 		//Adding adjacent points // I really need to fix that function... !!!!
 		const Point& pt = curr.first;
 		for (int i = 0; i < offsetSize; ++i) {
+			
+			clog << "	Scanning neighbours\n";
+
 			Point neighbour = pt + offsets[i];
 			if (map.inBounds(neighbour) &&
-				!visited(neighbour, map) &&
-				map.getPtColor(neighbour.x, neighbour.y) != WALL_COLOR)
-			{
-				markVisit(neighbour, map);
+				passable(map.getPtColor(neighbour.x, neighbour.y), unpassable)) 
+			{	
 				map.setPtSource(neighbour.x, neighbour.y, pt);
-				toScan.push(std::make_pair(neighbour, calcDist(neighbour, to)));
+				if (!visited(neighbour, map)) {
+					markVisit(neighbour, map);
+					toScan.push(std::make_pair(neighbour, calcDist(neighbour, to)));
+				}
 			}
 		}
 
 	}
 
+	clog << "	NOPE \n";
 	return 2;
 }
 
 
-int np::setPathFromStartToAnyExit(SourceArray & map) {
-	Point start = findStart(map);
-	
-	std::vector<const Point*> objects = getObjects(map);
 
-	return 1;
+///////////////////////////////////
+/////  "Solvers" //////////////////
+
+//
+//
+//	Implements a BFS Scan room by room with updating
+//		which rooms are now availabe (?). It works until it 
+//		find an exit or scans the reacheble part of the map.
+//	  The idea is to make only one BFS scan of the map.
+//	  TODO:: Figure out some way to merge paths with min scanning
+//	Also, make it more presentable...
+//
+Path np::solve2(np::SourceArray& map) {
+	std::vector<np::color_t> unpassable;
+	std::vector<Point> skippedDoors;
+
+	//Scanning first room
+	ObjContainer identifiedObj;// = ::fillSourceArrayFromPt(map, start, unpassable, skippedDoors, NO_DOORS);
+
+	//Filters
+	std::vector<const np::Point*> keys;
+	std::vector<const np::Point*> exits;
+	std::vector<const np::Point*> doors;
+	size_t filteredObj = 0;
+	
+	Point start = findStart(map);
+	map.setPtDistFromStart(start.x, start.y, 0);
+
+	std::queue<Point> toScan;
+	toScan.push(map.clonePt(start.x, start.y));
+
+	while (!toScan.empty()) {
+		Point curr = toScan.front();
+		toScan.pop();
+		//Scan Room
+		identifiedObj = ::fillSourceArrayFromPt(map, curr, unpassable, skippedDoors, NO_DOORS);
+		//if (identifiedObj.empty()) return Path();
+
+		//Filter
+		for (size_t& i = filteredObj; i < identifiedObj.size(); ++i) {
+			if (identifiedObj[i].second == Key)  keys.push_back(&identifiedObj[i].first);
+			else if (identifiedObj[i].second == Exit) exits.push_back(&identifiedObj[i].first);
+			else if (identifiedObj[i].second == Door) doors.push_back(&identifiedObj[i].first);
+		}
+
+		if (!exits.empty()) break; 
+
+		std::vector<size_t> doorsToPass;
+		//mark keylsess doors
+		for (size_t i = 0; i < doors.size(); ++i) {
+			//bool dontRemove = false;
+			for (size_t j = 0; j < keys.size(); ++j)
+				if (sameColor(*keys[j], skippedDoors[j])) {
+					doorsToPass.push_back(j);
+				//	dontRemove = true;
+				}
+			//if (!dontRemove) unpassable.push_back(doors[i]->color);
+		}
+
+		// needs some way to compress these
+		for (auto i : doorsToPass) //if all's well, it will ad only the other side
+			bypassObject(map, skippedDoors[i], toScan);
+
+	}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+
+	if (exits.empty()) return Path();// ;,(
+
+	std::vector<color_t> keysNeeded;
+	Path pToE = getPathTo(*exits[0], map);
+	for (const auto& i : pToE)
+		if (!sameColor(i.color, CORIDOR_COLOR) && !partOfKey(i, keys))
+			keysNeeded.push_back(i.color);
+	
+	return pToE;
+	//Oh fuck..
+	//Keys could be in diff rooms
+
+	// For now Stupid Solve
+
+
+	// And now the fucked up part
+	//Currently   E -> Dn -> Dn-1 -> .. -> D1 -> S
+	// Have to modify path as follows
+	//	S-> K1 [..]-> K2 [..] -> K3 [..]-> .. [..]-> E
 }
 
+
+//
+//Path solveStupid(np::SourceArray&map) {
+//	std::vector<np::color_t> unpassable;
+//	ObjContainer identifiedObj = fillSourceArrayFromStart(map,unpassable);
+//
+//	np::Point start = identifiedObj[0].first;
+//	std::vector<const np::Point*> keys;
+//	std::vector<const np::Point*> exits;
+//	std::vector<const np::Point*> doors;
+//	//Filter
+//	for (size_t i = 0; i < identifiedObj.size(); ++i) {
+//		if (identifiedObj[i].second == Key)  keys.push_back(&identifiedObj[i].first);
+//		else if (identifiedObj[i].second == Exit) exits.push_back(&identifiedObj[i].first);
+//		else if (identifiedObj[i].second == Door) doors.push_back(&identifiedObj[i].first);
+//	}
+//	if (exits.empty()) return Path();
+//	//remove keylsess doors
+//	for (size_t i = 0; i < doors.size(); ++i) {
+//		bool dontRemove = false;
+//		for (size_t j = 0; j < keys.size(); ++j)
+//			if (sameColor(*keys[j],*doors[j])) dontRemove = true;
+//		if (!dontRemove) unpassable.push_back(doors[i]->color);
+//	}
+//	
+//	if (!unpassable.empty()) {
+//		map.reset();
+//		fillSourceArrayFromPt(map, start, unpassable);
+//	}
+//
+//	std::vector<Path> pathsToExits;
+//	for (size_t i = 0; i < exits.size(); ++i) {
+//		pathsToExits.push_back(getPathTo(*exits[i], map));
+//	}
+//
+//	Path* shortest = &pathsToExits[0];
+//	for (size_t i = 0; i < pathsToExits.size(); ++i)
+//		if (pathsToExits[i].size() > 1 &&
+//			pathsToExits[i].size() < shortest->size())
+//				shortest = &pathsToExits[i];
+//
+//	Path& path = *shortest; //Exit -> Start
+//	ObjContainer inTheWay;
+//	for (size_t i = 1; i < path.size(); ++i) {
+//		if (sameColor(path[i], CORIDOR_COLOR)) continue;
+//		if (partOfKey(path[i], keys)) //there's a bug when a door and a key are really close to eachother
+//			inTheWay.push_back(std::make_pair(path[i], Key));
+//		else {
+//			inTheWay.push_back(std::make_pair(path[i], Door));
+//			color_t doorCol = path[i].color;
+//			//Skip door
+//			while (path[i + 1].color == doorCol) ++i;
+//		}
+//	}
+//	std::vector<color_t> accessToKey;
+//	std::vector<std::pair<Point, color_t>> needKeyAt;
+//	for (size_t i = inTheWay.size() - 1; i > 0; ++i) {
+//		if (inTheWay[i].second == Key) accessToKey.push_back(inTheWay[i].first.color);
+//		else {
+//			bool needKey = true;
+//			Point& pt = inTheWay[i].first;
+//			for (size_t j = 0; j < accessToKey.size(); ++i)
+//				if (accessToKey[j] == pt.color) needKey = false;
+//			if (needKey) needKeyAt.push_back(std::make_pair(pt, pt.color));
+//		}
+//	}
+//
+//	for (size_t i = 0; i < needKeyAt.size(); ++i) {
+//		
+//	}
+//}
+//
+
+//int np::setPathFromStartToAnyExit(SourceArray & map) {
+//	Point start = findStart(map);
+//	
+//	std::vector<const Point*> objects = getObjects(map);
+//
+//	return 1;
+//}
+
+
+/*
+int np::setPathFromTo(const Point&from, const Point& to, SourceArray& map, const std::vector<color_t>& unpassable) {
+//Validation
+if (!map.inBounds(from) && !map.inBounds(to)) return 1;
+clog << "  Starting A*\n";
+
+markVisit(from, map);
+map.setPtDistFromStart(from.x, from.y, 0);
+
+std::priority_queue<PointDistToExit, std::vector<PointDistToExit>, greater> toScan;
+
+toScan.push(std::make_pair(from, calcDist(from, to)));
+
+bool objectiveFound = false;
+PointDistToExit curr;// = toScan.top();
+
+while (!toScan.empty()) {
+curr = toScan.top();
+toScan.pop();
+
+clog << " Scanning top : \n";
+LOG_MAX_HEAP_TOP(curr);
+LOG_A_STAR_END_CONDITION(curr, to, map);
+
+if (curr.second == 0 ||
+sameColor(map.getPtColor(curr.first.x, curr.first.y), map.getPtColor(to.x, to.y)))
+{
+clog << "	FOUND PATH\n";
+map.setPtSource(to.x, to.y, curr.first);
+return 0;
+}
+
+//Adding adjacent points // I really need to fix that function... !!!!
+const Point& pt = curr.first;
+for (int i = 0; i < offsetSize; ++i) {
+
+clog << "	Scanning neighbours\n";
+
+Point neighbour = pt + offsets[i];
+if (map.inBounds(neighbour)) {
+neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
+std::queue<np::Point> border;
+
+if (passable(neighbour.color, unpassable) && neighbour.color != CORIDOR_COLOR)
+bypassObject(map, neighbour, border);
+
+while (!border.empty()) {
+np::Point borderCurr = border.front();
+map.setPtSource(neighbour.x, neighbour.y, pt);
+
+if (!visited(neighbour, map)) {
+markVisit(neighbour, map);
+toScan.push(std::make_pair(neighbour, calcDist(neighbour, to)));
+
+}
+}
+}
+}
+
+}
+
+clog << "	NOPE \n";
+return 2;
+}
+
+*/
 
 
 

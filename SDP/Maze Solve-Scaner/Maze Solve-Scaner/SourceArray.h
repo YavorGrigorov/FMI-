@@ -23,11 +23,13 @@ namespace np {
 		size_t getWidth() const;
 
 		void setPtSource(const coord_t& x, const coord_t& y, const Point& source);
-		void setPtColor(const coord_t& x, const coord_t& y, unsigned color);
+		void setPtColor(const coord_t& x, const coord_t& y, const color_t& color);
+		void setPtDistFromStart(const coord_t& x, const coord_t& y, const dist_t& dist);
 
-		const Point& getPtSource(const coord_t& x, const coord_t& y) const;
+		Point clonePt(const coord_t& x, const coord_t& y) const;
+		Point clonePtSource(const coord_t& x, const coord_t& y) const;
 		const color_t& getPtColor(const coord_t& x, const coord_t& y) const;
-		//dist_t getPtDistFrStart(const coord_t& x, const coord_t& y) const;
+		dist_t getPtDistFrStart(const coord_t& x, const coord_t& y) const;
 
 		bool inBounds(const Point& pt) const;
 		bool inBounds(const coord_t& x, const coord_t& y) const;
@@ -46,7 +48,7 @@ namespace np {
 
 	private:
 		//vector<vector< std::pair<Point, dist_t> >> arr;//the void* idea doesn't work with resizing (address)
-		vector<vector< Point>> arr;//the void* idea doesn't work with resizing (address)
+		vector<vector<Point>> arr;//the void* idea doesn't work with resizing (address)
 		
 	};
 }

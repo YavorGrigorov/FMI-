@@ -25,6 +25,12 @@
     <Filter Include="Source Files\SourceArray">
       <UniqueIdentifier>{39fdbdd4-e4de-40e8-9f82-a87e2661c083}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Maze Solver">
+      <UniqueIdentifier>{0ff000a6-1374-4ad7-acdf-368eb6f1f547}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Maze Solver">
+      <UniqueIdentifier>{a0121cab-a295-4499-b2b2-307196eb1e52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImageLoader.h">
@@ -39,9 +45,6 @@
     <ClInclude Include="Point.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MazeSolver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SourceArray.h">
       <Filter>Header Files\SourceArray</Filter>
     </ClInclude>
@@ -51,12 +54,15 @@
     <ClInclude Include="SourceArrayConstIterator.h">
       <Filter>Header Files\SourceArray</Filter>
     </ClInclude>
+    <ClInclude Include="MazeSolver.h">
+      <Filter>Header Files\Maze Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="Object Identifier.h">
+      <Filter>Header Files\Maze Solver</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MazeSolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SourceArray.cpp">
@@ -67,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="SourceArrayIterator.cpp">
       <Filter>Source Files\SourceArray</Filter>
+    </ClCompile>
+    <ClCompile Include="MazeSolver.cpp">
+      <Filter>Source Files\Maze Solver</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

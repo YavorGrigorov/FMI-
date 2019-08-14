@@ -14,6 +14,8 @@
 // This is for testing..
 
 namespace np {
+	typedef std::vector<np::Point> Path;
+
 	//
 	// For identifying objects
 	enum ObjType {
@@ -32,7 +34,7 @@ namespace np {
 	///		walls and will not scan them. when it's true, it will scan them and go
 	///		through them
 	//
-	ObjContainer fillSourceArrayFromPt(SourceArray& map, const Point& start, bool includeDoors = true);
+	ObjContainer fillSourceArrayFromPt(SourceArray& map, const Point& start, const std::vector<color_t>& unpassable, bool includeDoors = true);
 
 	//
 	// Finds the enterence to the maze and then it fills the source array with
@@ -44,17 +46,19 @@ namespace np {
 	///		walls and will not scan them. when it's true, it will scan them and go
 	///		through them
 	//
-	ObjContainer fillSourceArrayFromStart(SourceArray& map, bool includeDoors = true);
+	ObjContainer fillSourceArrayFromStart(SourceArray& map, const std::vector<color_t>& unpassable, bool includeDoors = true);
 
 	//
 	//	Finds the shortest path from pt from to pt to using A* algorithm
 	//	 with heuristic the dist from the current point to the to point. //needs to be written better
 	//
-	int setPathFromToObjective(const Point&from, const Point& to, SourceArray& map);
+	int setPathFromTo(const Point&from, const Point& to, SourceArray& map, const std::vector<color_t>& unpassable);
 
-	int setPathFromStartToAnyExit(SourceArray& map);
+	Path solve2(np::SourceArray& map);
 
+	//int setPathFromStartToAnyExit(SourceArray& map);
 
+	
 }
 
 

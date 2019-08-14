@@ -5,10 +5,12 @@
 #define	IMAGE_LOADER_HEADER_INCLUDED__
 
 #include <fstream>
-#include <iostream>
 #include "SourceArray.h"
 
+#ifdef NP_LOG_IO_BMP_READ
+#include <iostream>
 using std::clog;
+#endif
 
 enum Status {
 	FAIL,
@@ -59,24 +61,32 @@ size_t calcPadding(size_t width) {
 }
 
 Status loadBmp(const char* filePath, Container& container) {
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Loading file " << filePath << std::endl;
+#endif
 	if (!filePath) return FAIL;
 
 	std::ifstream file(filePath, std::ios::binary | std::ios::beg);
 	if (!file) return FAILED_TO_OPEN;
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Checking validity of bmp file\n";
+#endif
 	//probably, I should rename these
 	Status failStatus = isValid(file);
 	if (failStatus != ALL_OK) return failStatus;
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Getting pixel array start\n";
+#endif
 	//Getting the pixel arr begining
 	size_t imgArrStart = 0;
 	file.seekg(10, std::ios::beg);
 	file.read((char*)&imgArrStart, 4);
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Getting image measurements\n";
+#endif
 	//Measurments
 	file.seekg(18, std::ios::beg);
 	size_t width = 0, height = 0;
@@ -92,26 +102,34 @@ Status loadBmp(const char* filePath, Container& container) {
 	iterator endIter = container.end();
 	
 	unsigned paddingSize = calcPadding(width);
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Calculating Padding : " << paddingSize << std::endl;
+#endif
 	size_t i = 0;
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Starting to read pexel array from pos " << imgArrStart << std::endl;
+#endif
 	file.seekg(imgArrStart);
 
 	np::color_t pixel = 0xFF000000;
 	while (file && iter != endIter) {
+#ifdef NP_LOG_IO_BMP_READ
 		clog << "Setting pt " << iter << " to ";
-		
+#endif
 		file.read((char*)&pixel, 3);
 		iter->color = pixel;
 
+#ifdef NP_LOG_IO_BMP_READ
 		clog << iter << std::endl;
-
+#endif
 		++iter;
 		++i;
 
 		if (i == width) {
+#ifdef NP_LOG_IO_BMP_READ
 			clog << "Skipping padding " << paddingSize << " bytes\n";
+#endif
 			file.seekg(paddingSize, std::ios::cur);
 			i = 0;
 		}
@@ -119,7 +137,9 @@ Status loadBmp(const char* filePath, Container& container) {
 
 	if (iter != endIter && !file.eof()) return FAILED_TO_READ;
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Closing file\n";
+#endif
 	file.clear();
 	file.close();
 
@@ -137,7 +157,7 @@ unsigned createHeader(std::ofstream& file, size_t width, size_t height) {
 	
 	// Size
 	// Each row has to end on a dword (4 bytes)
-	unsigned padding = calcPadding(width);
+	size_t padding = calcPadding(width);
 	//54 is the size of both headers
 	buff = 54 + (width * 3 + padding)* height; 
 	file.write((char*)&buff, 4);
@@ -192,7 +212,9 @@ unsigned createHeader(std::ofstream& file, size_t width, size_t height) {
 
 
 Status saveBmp(const char* filePath, const Container& container, size_t height, size_t width) {
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Saving to file " << filePath << std::endl;
+#endif
 	if (!filePath) return FAIL;
 
 	std::ofstream file(filePath, std::ios::binary);
@@ -208,32 +230,38 @@ Status saveBmp(const char* filePath, const Container& container, size_t height, 
 	size_t pos = 54;
 	citerator endIter = container.cend();
 	
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Map width " << container.getWidth()
 		<< "\n Map height " << container.getHeight();
-
+#endif
 	for ( 	citerator iter = container.cbeg();
 			file && iter != endIter;
 			++iter) {
 
+#ifdef NP_LOG_IO_BMP_READ
 		clog << " Writing pixel from arr " << iter << " ::\n"
 			<< " Byte pos " << pos << " val " << std::hex << (iter->color)
 			<< std::dec
 			<< "   Pos in file " << file.tellp()
 			<< std::endl;
+#endif
 		file.write((char*)&(iter->color), 3);
 		++i;
 		pos += 3;
 
 		if (i == width) {
+#ifdef NP_LOG_IO_BMP_READ
 			clog << "Putting padding " << paddingSize << " Null bytes\n";
+#endif
 			file.write((char*)&padding, paddingSize);
 			i = 0;
 			pos += paddingSize;
 		}
 	}
 
+#ifdef NP_LOG_IO_BMP_READ
 	clog << "Closing File\n";
-
+#endif
 	if (!file) return FAILED_TO_WRITE;
 
 	file.clear();

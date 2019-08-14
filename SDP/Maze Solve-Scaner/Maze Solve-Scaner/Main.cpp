@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <ctime>
+#include <string>
 
 #include "SourceArray.h"
 #include "ImageLoader.h"
@@ -25,8 +26,8 @@ void drawPath(np::SourceArray& map, const np::Point& pt) {
 	np::Point curr = pt;
 	while (map.inBounds(curr)) {
 		clog << " (" << curr.x << " , " << curr.y << ")";
-		map.setPtColor(curr.x, curr.y, PATH_COLOR);
-		curr = map.getPtSource(curr.x, curr.y);
+		map.setPtColor(curr.x, curr.y, PATH_COLOR & pt.color);
+		curr = map.clonePtSource(curr.x, curr.y);
 	}
 	clog << std::endl;
 }
@@ -37,22 +38,17 @@ int main(int argc, char* argv[]) {
 
 	np::SourceArray map;
 	Status s = loadBmp(argv[1], map);
+	clog << "	File read status " << s << std::endl;
 	if (s != ALL_OK) return s;
 
-	np::setPathFromToObjective();
+	np::Path p = np::solve2(map);
 
-	//np::ObjContainer identifiedObj = np::fillSourceArrayFromStart(map);
-	//
-	//for (size_t i = 0; i < identifiedObj.size(); ++i) {
-	//	drawPath(map, identifiedObj[i].first);
-	//}
-	//for (np::coord_t x = 0, y = 0;
-	//	x < map.getWidth() && y < map.getHeight();
-	//	++x, ++y)
-	//	map.setPtColor(x, y, PATH_COLOR);
+	for (const auto& i : p)
+		map.setPtColor(i.x, i.y, PATH_COLOR);
 
+	clog << "	Saving img\n";
 	saveBmp(argv[2], map, map.getHeight(), map.getWidth());
-
+	
 	return 0;
 }
 

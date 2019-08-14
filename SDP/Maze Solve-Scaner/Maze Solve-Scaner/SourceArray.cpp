@@ -38,15 +38,30 @@ size_t SourceArray::getWidth() const {
 void SourceArray::setPtSource(const coord_t& x, const coord_t& y, const Point& source) {
 	clog << " Setting point (" << x << " , " << y << ") source";
 	if (inBounds(x, y) && inBounds(source)) {
-		clog << " from (" << arr[x][y].x << " , " << arr[x][y].y << ") to ("
-			<< x << " , " << y << ") \n";
-		arr[x][y].x = source.x;
-		arr[x][y].y = source.y;
+		if (arr[x][y].distFromStart > getPtDistFrStart(source.x, source.y) + 1) {
+			
+			clog << " from (" << arr[x][y].x << " , " << arr[x][y].y << ") to ("
+				<< source.x << " , " << source.y << ") dist from start = ";
+
+			arr[x][y].x = source.x;
+			arr[x][y].y = source.y;
+			arr[x][y].distFromStart = getPtDistFrStart(source.x, source.y) + 1;
+
+			clog << arr[x][y].distFromStart << std::endl;
+		}
+		else clog << " Failed :: Point has a better source  ( " 
+			<< arr[x][y].distFromStart << " < " << getPtDistFrStart(source.x, source.y) + 1 << ")\n";
 	}
-	else clog << " Failed :: Point out of bounds\n";
+	else clog << " Failed :: Point out of bounds ( " << source.x << " , " << source.y << " )\n";
 }
 
-void SourceArray::setPtColor(const coord_t& x, const coord_t& y, unsigned color) {
+void np::SourceArray::setPtDistFromStart(const coord_t & x, const coord_t & y, const dist_t & dist) {
+	if (inBounds(x, y)) {
+		arr[x][y].distFromStart = dist;
+	}
+}
+
+void SourceArray::setPtColor(const coord_t& x, const coord_t& y, const color_t& color) {
 	clog << " Setting point (" << x << " , " << y << ") color";
 
 	if (inBounds(x, y)) {
@@ -63,9 +78,20 @@ const color_t& SourceArray::getPtColor(const coord_t& x, const coord_t& y) const
 		return arr[x][y].color;
 }
 
-const Point& SourceArray::getPtSource(const coord_t& x, const coord_t& y) const {
-	if (inBounds(x, y))
-		return arr[x][y];
+dist_t np::SourceArray::getPtDistFrStart(const coord_t & x, const coord_t & y) const {
+	if (!inBounds(x, y)) return MAX_DIST;
+	return arr[x][y].distFromStart;
+}
+
+Point np::SourceArray::clonePt(const coord_t & x, const coord_t & y) const {
+	Point p = { x, y, arr[x][y].color };
+	p.distFromStart = arr[x][y].distFromStart;
+	return p;
+};
+
+
+Point SourceArray::clonePtSource(const coord_t& x, const coord_t& y) const {
+	return clonePt(arr[x][y].x, arr[x][y].y);
 }
 
 bool SourceArray::inBounds(const coord_t& x, const coord_t& y) const {
@@ -83,6 +109,7 @@ void SourceArray::reset() {
 			arr[i][j].x = -1;
 			arr[i][j].y = -1;
 			arr[i][j].color = (arr[i][j].color | 0xFF000000);
+			arr[i][j].distFromStart = MAX_DIST;
 		}
 }
 

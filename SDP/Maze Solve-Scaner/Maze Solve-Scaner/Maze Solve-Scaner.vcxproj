@@ -114,6 +114,7 @@
     <ClInclude Include="ImageLoader.h" />
     <ClInclude Include="MazeRules.h" />
     <ClInclude Include="MazeSolver.h" />
+    <ClInclude Include="Object Identifier.h" />
     <ClInclude Include="Objects.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="SourceArray.h" />
