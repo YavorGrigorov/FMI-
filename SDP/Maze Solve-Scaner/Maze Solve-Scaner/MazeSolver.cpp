@@ -354,14 +354,16 @@ ObjContainer fillSourceArrayFromPt(SourceArray& map, const Point& start, const s
 	markVisit(start, map);
 
 	std::queue<Point> toScan;
-	if(start.color != CORIDOR_COLOR)
+	if (start.color != CORIDOR_COLOR) {
 		bypassObject(map, start, toScan); //Bypassing start //It's more for convinice for the logging
-	//Fixing results
-	for (size_t i = 0; i < toScan.size(); ++i) {
-		map.setPtDistFromStart(toScan.front().x, toScan.front().y, start.distFromStart + 1);
-		toScan.push(toScan.front());
-		toScan.pop();
+		for (size_t i = 0; i < toScan.size(); ++i) {
+			map.setPtDistFromStart(toScan.front().x, toScan.front().y, start.distFromStart + 1);
+			toScan.push(toScan.front());
+			toScan.pop();
+		}
 	}
+	else toScan.push(start);
+	//Fixing results
 
 	while (!toScan.empty()) {
 		Point curr = toScan.front();
@@ -428,15 +430,15 @@ dist_t calcDist(const Point& fr, const Point& to) {
 	return x + y;
 }
 
-bool partOfKey(const np::Point& pt, const std::vector<const np::Point*>& keys) {
+bool partOfKey(const np::Point& pt, const std::vector<np::Point>& keys) {
 	if (sameColor(pt.color, EXIT_COLOR) ||
 		sameColor(pt.color, WALL_COLOR) ||
 		sameColor(pt.color, ENTERENCE_COLOR) ||
 		sameColor(pt.color, CORIDOR_COLOR)) return false;
 
 	for (size_t i = 0; i < keys.size(); ++i) {
-		if (sameColor(*keys[i], pt))
-			if (calcDist(pt, *keys[i]) <= KEY_HEIGHT*KEY_HEIGHT + KEY_WIDTH*KEY_WIDTH) return true;
+		if (sameColor(keys[i], pt))
+			if (calcDist(pt, keys[i]) <= KEY_HEIGHT*KEY_HEIGHT + KEY_WIDTH*KEY_WIDTH) return true;
 	}
 	return false;
 }
@@ -539,6 +541,46 @@ int np::setPathFromTo(const Point&from, const Point& to, SourceArray& map, const
 }
 
 
+// The Disney-Fox merger
+//For now like this
+Path merge(const Path& path, const std::vector<Path>& pathToKeys) {
+	Path res(path);
+	for (size_t i = 0; i < pathToKeys.size(); ++i)
+		for (size_t j = 0; j < pathToKeys[i].size(); ++j)
+			res.push_back(pathToKeys[i][j]);
+	return res;
+}
+
+
+Path mergePaths(const Point& exitPt, const std::vector<Point>& keys, SourceArray& map) {
+	Path path;
+	if (!map.inBounds(exitPt)) return path;
+
+	path = getPathTo(exitPt, map);
+
+	std::vector<Point> accessToKeys;
+	std::vector<Path> pathsToKeys;
+	for (size_t i = 0; i < path.size(); ++i) {
+		if (partOfKey(path[i], keys))
+			accessToKeys.push_back(path[i]);
+		else if (!sameColor(path[i].color, CORIDOR_COLOR)) {
+			bool passable = false;
+			for (size_t j = 0; j < accessToKeys.size(); ++j)
+				if (sameColor(path[i].color, accessToKeys[j].color))
+					passable = true;
+			if (!passable) {
+				for (size_t j = 0; j < keys.size(); ++j)
+					if (sameColor(keys[j], path[i]))
+						pathsToKeys.push_back(getPathTo(keys[j], map));
+			}
+		}
+	}
+	return merge(path, pathsToKeys);
+}
+
+
+
+
 
 ///////////////////////////////////
 /////  "Solvers" //////////////////
@@ -554,16 +596,13 @@ int np::setPathFromTo(const Point&from, const Point& to, SourceArray& map, const
 //
 Path np::solve2(np::SourceArray& map) {
 	std::vector<np::color_t> unpassable;
-	std::vector<Point> skippedDoors;
 
 	//Scanning first room
 	ObjContainer identifiedObj;// = ::fillSourceArrayFromPt(map, start, unpassable, skippedDoors, NO_DOORS);
 
 	//Filters
-	std::vector<const np::Point*> keys;
-	std::vector<const np::Point*> exits;
-	std::vector<const np::Point*> doors;
-	size_t filteredObj = 0;
+	std::vector<np::Point> keys;
+	std::vector<np::Point> exits;
 	
 	Point start = findStart(map);
 	map.setPtDistFromStart(start.x, start.y, 0);
@@ -574,133 +613,38 @@ Path np::solve2(np::SourceArray& map) {
 	while (!toScan.empty()) {
 		Point curr = toScan.front();
 		toScan.pop();
+
 		//Scan Room
-		identifiedObj = ::fillSourceArrayFromPt(map, curr, unpassable, skippedDoors, NO_DOORS);
-		//if (identifiedObj.empty()) return Path();
+		std::vector<np::Point> doors;
+		identifiedObj = ::fillSourceArrayFromPt(map, curr, unpassable, doors, NO_DOORS);
 
 		//Filter
-		for (size_t& i = filteredObj; i < identifiedObj.size(); ++i) {
-			if (identifiedObj[i].second == Key)  keys.push_back(&identifiedObj[i].first);
-			else if (identifiedObj[i].second == Exit) exits.push_back(&identifiedObj[i].first);
-			else if (identifiedObj[i].second == Door) doors.push_back(&identifiedObj[i].first);
+		for (size_t i = 0; i < identifiedObj.size(); ++i) {
+			if (identifiedObj[i].second == Key)  keys.push_back(identifiedObj[i].first);
+			else if (identifiedObj[i].second == Exit) exits.push_back(identifiedObj[i].first);
+			else if (identifiedObj[i].second == Door) doors.push_back(identifiedObj[i].first);
 		}
 
 		if (!exits.empty()) break; 
 
-		std::vector<size_t> doorsToPass;
-		//mark keylsess doors
+		//get passable doors
 		for (size_t i = 0; i < doors.size(); ++i) {
-			//bool dontRemove = false;
 			for (size_t j = 0; j < keys.size(); ++j)
-				if (sameColor(*keys[j], skippedDoors[j])) {
-					doorsToPass.push_back(j);
-				//	dontRemove = true;
+				if (sameColor(keys[j], doors[i])) { //I feel like I was drunk when I wrote this cicle
+					bypassObject(map, doors[i], toScan);
+					//map.setPtColor(foundDoors[i].x,foundDoors[i].y, 0xFF123456); //Testing
 				}
-			//if (!dontRemove) unpassable.push_back(doors[i]->color);
 		}
-
-		// needs some way to compress these
-		for (auto i : doorsToPass) //if all's well, it will ad only the other side
-			bypassObject(map, skippedDoors[i], toScan);
-
 	}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-
+	
 	if (exits.empty()) return Path();// ;,(
 
-	std::vector<color_t> keysNeeded;
-	Path pToE = getPathTo(*exits[0], map);
-	for (const auto& i : pToE)
-		if (!sameColor(i.color, CORIDOR_COLOR) && !partOfKey(i, keys))
-			keysNeeded.push_back(i.color);
-	
-	return pToE;
-	//Oh fuck..
-	//Keys could be in diff rooms
-
-	// For now Stupid Solve
-
-
-	// And now the fucked up part
-	//Currently   E -> Dn -> Dn-1 -> .. -> D1 -> S
-	// Have to modify path as follows
-	//	S-> K1 [..]-> K2 [..] -> K3 [..]-> .. [..]-> E
+	return mergePaths(exits[0], keys, map);
 }
 
 
-//
-//Path solveStupid(np::SourceArray&map) {
-//	std::vector<np::color_t> unpassable;
-//	ObjContainer identifiedObj = fillSourceArrayFromStart(map,unpassable);
-//
-//	np::Point start = identifiedObj[0].first;
-//	std::vector<const np::Point*> keys;
-//	std::vector<const np::Point*> exits;
-//	std::vector<const np::Point*> doors;
-//	//Filter
-//	for (size_t i = 0; i < identifiedObj.size(); ++i) {
-//		if (identifiedObj[i].second == Key)  keys.push_back(&identifiedObj[i].first);
-//		else if (identifiedObj[i].second == Exit) exits.push_back(&identifiedObj[i].first);
-//		else if (identifiedObj[i].second == Door) doors.push_back(&identifiedObj[i].first);
-//	}
-//	if (exits.empty()) return Path();
-//	//remove keylsess doors
-//	for (size_t i = 0; i < doors.size(); ++i) {
-//		bool dontRemove = false;
-//		for (size_t j = 0; j < keys.size(); ++j)
-//			if (sameColor(*keys[j],*doors[j])) dontRemove = true;
-//		if (!dontRemove) unpassable.push_back(doors[i]->color);
-//	}
-//	
-//	if (!unpassable.empty()) {
-//		map.reset();
-//		fillSourceArrayFromPt(map, start, unpassable);
-//	}
-//
-//	std::vector<Path> pathsToExits;
-//	for (size_t i = 0; i < exits.size(); ++i) {
-//		pathsToExits.push_back(getPathTo(*exits[i], map));
-//	}
-//
-//	Path* shortest = &pathsToExits[0];
-//	for (size_t i = 0; i < pathsToExits.size(); ++i)
-//		if (pathsToExits[i].size() > 1 &&
-//			pathsToExits[i].size() < shortest->size())
-//				shortest = &pathsToExits[i];
-//
-//	Path& path = *shortest; //Exit -> Start
-//	ObjContainer inTheWay;
-//	for (size_t i = 1; i < path.size(); ++i) {
-//		if (sameColor(path[i], CORIDOR_COLOR)) continue;
-//		if (partOfKey(path[i], keys)) //there's a bug when a door and a key are really close to eachother
-//			inTheWay.push_back(std::make_pair(path[i], Key));
-//		else {
-//			inTheWay.push_back(std::make_pair(path[i], Door));
-//			color_t doorCol = path[i].color;
-//			//Skip door
-//			while (path[i + 1].color == doorCol) ++i;
-//		}
-//	}
-//	std::vector<color_t> accessToKey;
-//	std::vector<std::pair<Point, color_t>> needKeyAt;
-//	for (size_t i = inTheWay.size() - 1; i > 0; ++i) {
-//		if (inTheWay[i].second == Key) accessToKey.push_back(inTheWay[i].first.color);
-//		else {
-//			bool needKey = true;
-//			Point& pt = inTheWay[i].first;
-//			for (size_t j = 0; j < accessToKey.size(); ++i)
-//				if (accessToKey[j] == pt.color) needKey = false;
-//			if (needKey) needKeyAt.push_back(std::make_pair(pt, pt.color));
-//		}
-//	}
-//
-//	for (size_t i = 0; i < needKeyAt.size(); ++i) {
-//		
-//	}
-//}
-//
 
 //int np::setPathFromStartToAnyExit(SourceArray & map) {
 //	Point start = findStart(map);

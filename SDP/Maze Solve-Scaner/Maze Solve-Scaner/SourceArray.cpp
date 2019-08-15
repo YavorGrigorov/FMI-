@@ -84,8 +84,11 @@ dist_t np::SourceArray::getPtDistFrStart(const coord_t & x, const coord_t & y) c
 }
 
 Point np::SourceArray::clonePt(const coord_t & x, const coord_t & y) const {
-	Point p = { x, y, arr[x][y].color };
-	p.distFromStart = arr[x][y].distFromStart;
+	Point p;
+	if (inBounds(x, y)) {
+		p = { x, y, arr[x][y].color };
+		p.distFromStart = arr[x][y].distFromStart;
+	}
 	return p;
 };
 
