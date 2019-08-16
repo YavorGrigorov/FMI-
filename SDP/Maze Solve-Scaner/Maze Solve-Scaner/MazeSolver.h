@@ -7,11 +7,7 @@
 #include "Point.h"
 #include "SourceArray.h"
 
-#include <queue>
 #include <vector>
-
-//
-// This is for testing..
 
 namespace np {
 	typedef std::vector<np::Point> Path;
@@ -23,6 +19,12 @@ namespace np {
 	};
 
 	typedef std::vector<std::pair<np::Point, ObjType>> ObjContainer;
+
+	//
+	/// Not great, not terrible
+	//
+	// TODO:: Add description
+	Path solve2(np::SourceArray& map);
 
 	//
 	// Scans the maze and fills the source array
@@ -53,11 +55,6 @@ namespace np {
 	//	 with heuristic the dist from the current point to the to point. //needs to be written better
 	//
 	int setPathFromTo(const Point&from, const Point& to, SourceArray& map, const std::vector<color_t>& unpassable);
-
-	Path solve2(np::SourceArray& map);
-
-	//int setPathFromStartToAnyExit(SourceArray& map);
-
 	
 }
 

@@ -112,6 +112,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ImageLoader.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="MazeRules.h" />
     <ClInclude Include="MazeSolver.h" />
     <ClInclude Include="Object Identifier.h" />
@@ -124,6 +125,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MazeSolver.cpp" />
+    <ClCompile Include="Point.cpp" />
     <ClCompile Include="SourceArray.cpp" />
     <ClCompile Include="SourceArrayConstIterator.cpp" />
     <ClCompile Include="SourceArrayIterator.cpp" />

@@ -1,8 +1,5 @@
 //
-// Are objects gonna have diff part of them different sources or
-// will they have the same source, e.g. if it's a ket (20x20)
-// the walls of the key point to the entry pt of the key 
-// (the first pt that got to the key)
+//
 //
 #ifndef NP_SOURCE_ARRAY_HEADER_INCLUDED
 #define NP_SOURCE_ARRAY_HEADER_INCLUDED
@@ -35,6 +32,7 @@ namespace np {
 		bool inBounds(const coord_t& x, const coord_t& y) const;
 
 		void reset();
+		void resetVisistStatus();
 		void clear();
 
 		class Iterator;
@@ -47,8 +45,7 @@ namespace np {
 		ConstIterator cend() const;
 
 	private:
-		//vector<vector< std::pair<Point, dist_t> >> arr;//the void* idea doesn't work with resizing (address)
-		vector<vector<Point>> arr;//the void* idea doesn't work with resizing (address)
+		vector<vector<Point>> arr;
 		
 	};
 }

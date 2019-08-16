@@ -1,21 +1,26 @@
 
 
+#include "Logger.h"
+
 #include "SourceArray.h"
 #include <iostream>
 using namespace np;
-using std::clog;
+
+
 
 SourceArray::SourceArray(size_t width, size_t height) {
-	clog << " Intializing SArr : Width " << width 
-				<< " Height " <<  height << std::endl;
+	LOG_TEXT(" Intializing SArr : Width ");
+	LOG_TEXT(width);
+	LOG_TEXT(" Height "); LOG_TEXT(height); LOG_ENDL;
 	arr.resize(height);
 	for (size_t i = 0; i < height; ++i)
 		arr[i].resize(width);
 }
 
 void SourceArray::setHeight(size_t height) {
-	clog << " Resizing Height from " << this->getHeight()
-		<< " to " << height << std::endl;
+	LOG_TEXT(" Resizing Height from ");
+	LOG_TEXT(this->getHeight());
+	LOG_TEXT(" to "); LOG_TEXT(height) LOG_ENDL;
 	arr.resize(height);
 }
 
@@ -24,8 +29,9 @@ size_t SourceArray::getHeight() const {
 }
 
 void SourceArray::setWidth(size_t width) {
-	clog << " Resizing Width from " << this->getWidth()
-		<< " to " << width << std::endl;
+	LOG_TEXT(" Resizing Width from ");
+	LOG_TEXT(this->getWidth());
+	LOG_TEXT(" to "); LOG_TEXT(width) LOG_ENDL;
 	for (size_t i = 0; i < arr.size(); ++i)
 		arr[i].resize(width);
 }
@@ -36,23 +42,15 @@ size_t SourceArray::getWidth() const {
 }
 
 void SourceArray::setPtSource(const coord_t& x, const coord_t& y, const Point& source) {
-	clog << " Setting point (" << x << " , " << y << ") source";
+	LOG_POINT_CHANGE_SOURCE(Point(x, y), arr[x][y], source);
+
 	if (inBounds(x, y) && inBounds(source)) {
-		if (arr[x][y].distFromStart > getPtDistFrStart(source.x, source.y) + 1) {
-			
-			clog << " from (" << arr[x][y].x << " , " << arr[x][y].y << ") to ("
-				<< source.x << " , " << source.y << ") dist from start = ";
+		arr[x][y].x = source.x;
+		arr[x][y].y = source.y;
 
-			arr[x][y].x = source.x;
-			arr[x][y].y = source.y;
-			arr[x][y].distFromStart = getPtDistFrStart(source.x, source.y) + 1;
-
-			clog << arr[x][y].distFromStart << std::endl;
-		}
-		else clog << " Failed :: Point has a better source  ( " 
-			<< arr[x][y].distFromStart << " < " << getPtDistFrStart(source.x, source.y) + 1 << ")\n";
+		LOG_POINT_DIST_FROM_START(arr[x][y], (*this));
 	}
-	else clog << " Failed :: Point out of bounds ( " << source.x << " , " << source.y << " )\n";
+	else LOG_POINT_OUT_OF_BOUNDS(source);
 }
 
 void np::SourceArray::setPtDistFromStart(const coord_t & x, const coord_t & y, const dist_t & dist) {
@@ -62,14 +60,14 @@ void np::SourceArray::setPtDistFromStart(const coord_t & x, const coord_t & y, c
 }
 
 void SourceArray::setPtColor(const coord_t& x, const coord_t& y, const color_t& color) {
-	clog << " Setting point (" << x << " , " << y << ") color";
+	LOG_TEXT(" Setting point "); LOG_POINT_COORD(Point(x, y)); LOG_TEXT( " color");
 
 	if (inBounds(x, y)) {
-		clog << " from " << std::hex << arr[x][y].color 
-			<< " to " << color << std::dec << std::endl;
+		LOG_POINT_COLOR(arr[x][y], (*this));
+		LOG_TEXT(" to "); LOG_COLOR(color);LOG_ENDL;
 		arr[x][y].color = color;
 	}
-	else clog << " Failed :: Point out of bounds\n";
+	else LOG_POINT_OUT_OF_BOUNDS(Point(x,y));
 
 }
 
@@ -105,19 +103,26 @@ bool SourceArray::inBounds(const coord_t& x, const coord_t& y) const {
 		y < getWidth();
 }
 
+void SourceArray::resetVisistStatus() {
+	LOG_TEXT(" Reseting SourceArray's point's visit status\n");
+	for (size_t i = 0; i < arr.size(); ++i)
+		for (size_t j = 0; j < arr[i].size(); ++j)
+			unvisit(arr[i][j]);
+}
+
 void SourceArray::reset() {
-	clog << " Reseting Source array (e.g. making all pt's unvisited and with invalid sources)\n";
+	LOG_TEXT(" Reseting Source array (e.g. making all pt's unvisited and with invalid sources)\n");
 	for (size_t i = 0; i < arr.size(); ++i)
 		for (size_t j = 0; j < arr[i].size(); ++j) {
 			arr[i][j].x = -1;
 			arr[i][j].y = -1;
-			arr[i][j].color = (arr[i][j].color | 0xFF000000);
+			unvisit(arr[i][j]);
 			arr[i][j].distFromStart = MAX_DIST;
 		}
 }
 
 void SourceArray::clear() {
-	clog << " Clearing Source array\n";
+	LOG_TEXT(" Clearing Source array\n");
 	arr.clear();
 	arr.shrink_to_fit();// see if there is another way to kill the used memory
 }

@@ -16,91 +16,32 @@ namespace np {
 		color_t color;
 		dist_t distFromStart;
 
-		Point(coord_t x = -1, coord_t y = -1, color_t color = 0xFF000000) 
-			: x(x), y(y), color(color), distFromStart(MAX_DIST) {}
+		Point(coord_t x = -1, coord_t y = -1, color_t color = 0xFF000000, dist_t dist = MAX_DIST);
 		
-		bool operator==(const Point& rhs){
-			return 	x == rhs.x 	&&
-					y == rhs.y	&&
-					color == rhs.color;
-		}
+		bool operator==(const Point& rhs);
 		
-		bool operator!=(const Point& rhs){
-			return !(*this == rhs);
-		}
+		bool operator!=(const Point& rhs);
 		
-		Point& operator+=(const Point& rhs){
-			x += rhs.x;
-			y += rhs.y;
-			return *this;
-		}
+		Point& operator+=(const Point& rhs);
 		
-		Point operator+(const Point& rhs) const{
-			Point temp(*this);
-			return temp += rhs;
-		}
+		Point operator+(const Point& rhs) const;
 		
-		Point& operator-=(const Point& rhs){
-			x -= rhs.x;
-			y -= rhs.y;
-			return *this;
-		}
+		Point& operator-=(const Point& rhs);
 		
-		Point operator-(const Point& rhs) const{
-			Point temp(*this);
-			return temp -= rhs;
-		}
-		
-		
+		Point operator-(const Point& rhs) const;
 	};
 
-	//template <class T>
-	//std::hash<Point>{
-	//	size_t operator()(const Point& pt) {
-	//		return std::hash<coord_t>(pt.x + pt.y + pt.color);
-	//	}
-	//};
+	bool sameColor(color_t rhs, color_t lhs);
+	
+	bool sameColor(const Point& lhs, const Point& rhs);
 
-	//
-	// Why, oh why are logic operations with higher priority than bitwise...
-	static bool sameColor(const Point& lhs, const Point& rhs){
-		return (lhs.color & 0x00FFFFFF) == (rhs.color & 0x00FFFFFF);
-	}
+	void visit(Point& pt);
 
-	static bool sameColor(color_t rhs, color_t lhs) {
-		return (rhs | 0xFF000000) == (lhs | 0xFF000000);
-	}
+	void unvisit(Point& pt);
+
+	dist_t calcDist(const Point& fr, const Point& to);
+
 }
-
-//I don't know why I added this
-//struct dist_t {
-//	unsigned d;
-//
-//	dist_t(unsigned d = MAX_DIST) : d(d) {};
-//
-//	bool operator==(const dist_t& rhs) const;
-//	bool operator!=(const dist_t& rhs) const;
-//	bool operator<(const dist_t& rhs) const;
-//	bool operator<=(const dist_t& rhs) const;
-//	bool operator>(const dist_t& rhs) const;
-//	bool operator>=(const dist_t& rhs) const;
-//
-//	dist_t& operator+=(const dist_t& rhs);
-//	dist_t operator+(const dist_t& rhs) const;
-//
-//	dist_t& operator-=(const dist_t& rhs);
-//	dist_t operator-(const dist_t& rhs) const;
-//
-//	dist_t& operator*=(const dist_t& rhs);
-//	dist_t operator*(const dist_t& rhs) const;
-//
-//	dist_t& operator/=(const dist_t& rhs);
-//	dist_t operator/(const dist_t& rhs) const;
-//
-//	operator int(int i) { return d };
-//};
-
-
 
 #endif
 
