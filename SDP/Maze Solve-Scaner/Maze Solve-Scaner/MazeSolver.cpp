@@ -220,38 +220,76 @@ static Point findStart(const SourceArray& map) {
 	return start;
 }
 
-// BFS_VISIT_SAMECOLOR and AddAdjecent are basically the same
-//	TODO::fix
-static void BFS_Visit_SameColor(SourceArray& map, const Point& curr, std::queue<Point>& toBeScanned, std::queue<Point>& borders) {
-
-	LOG_TEXT("	Adding neighbours : \n");
+static void visitPoint(	SourceArray* map, 
+					const Point* curr, 
+					std::queue<Point>* toScanned, 
+					std::queue<Point>* borders,
+					void (handle*)(SourceArray* map, Point* curr, Point* neighbour, std::queue<Point>* toScan, std::queue<Point>* borders)
+				){
+			///
 	for (size_t i = 0; i < offsetSize; ++i) {
 		Point neighbour(curr.x + offsets[i].x , curr.y + offsets[i].y);
-		if (!map.inBounds(neighbour)) continue;
-		
-		setPtSource(neighbour, curr, map);
-		neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
-		
-		if(visited(neighbour, map)) continue;
-		markVisit(neighbour, map);
-		// check if it's part of the obj
-		if (sameColor(neighbour, curr)) {
-			LOG_TEXT("		to scan ");
-			LOG_POINT_COORD(neighbour);
-			LOG_ENDL;
-			toBeScanned.push(neighbour);
-		}
-		else {
-			LOG_TEXT("		to borders ");
-			LOG_POINT_COORD(neighbour);
-			LOG_ENDL;
-			borders.push(neighbour);
-		}
-	}
 	
+		if (!map->inBounds(neighbour)) continue;		
+			setPtSource(neighbour, *curr, *map);
+		
+		neighbour.color = map->getPtColor(neighbour.x, neighbour.y);
+		
+		if(visited(neighbour, *map)) continue;
+		markVisit(neighbour, *map);
+						
+		handle(map, curr, &neighbour, toScan, borders);
+	}	
+}
+
+void handleBFS_Visit_SameColor(	SourceArray* map, 
+								Point* curr, 
+								Point* neighbour, 
+								std::queue<Point>* toScan, 
+								std::queue<Point>* borders,				
+							){
+					
+	// check if it's part of the obj
+	if (sameColor(*neighbour, *curr)) {
+		LOG_TEXT("		to scan ");
+		LOG_POINT_COORD(*neighbour);
+		LOG_ENDL;
+		toBeScanned->push(*neighbour);
+	}
+	else {
+		LOG_TEXT("		to borders ");
+		LOG_POINT_COORD(*neighbour);
+		LOG_ENDL;
+		borders->push(*neighbour);
+	}
 }
 
 
+
+static void BFS_Visit_SameColor(SourceArray& map, const Point& curr, std::queue<Point>& toBeScanned, std::queue<Point>& borders) {
+
+	LOG_TEXT("	Adding neighbours : \n");
+	visitPoint(&map, &curr, &toBeScanned, &border, &handleBFS_Visit_SameColor);//?
+}
+
+static void handleAddAdjecent(	SourceArray* map, 
+								Point* curr, 
+								Point* neighbour, 
+								std::queue<Point>* toScan, 
+								std::queue<Point>* borders,				
+							){
+	
+	LOG_POINT(neighbour, map);
+	LOG_ENDL;
+	
+	toScan.push(neighbour);
+}
+
+static void addAdjacent(SourceArray& map, const Point& pt, std::queue<Point>& toScan){
+	
+	LOG_TEXT("	Adding adjecent pts :\n");
+	visitPoint(&map, &curr, &toBeScanned, nullptr, &handleAddAdjecent);
+}
 
 // This is basically BFS with the idea of
 //	getting the borders of an object
@@ -275,36 +313,12 @@ static void bypassObject(SourceArray& map, const Point& start, std::queue<Point>
 
 }
 
-// TODO:: template wifht handle
-static void addAdjacent(SourceArray& map, const Point& pt, std::queue<Point>& toScan){
-	LOG_TEXT("	Adding adjecent pts :\n");
-
-	for(int i = 0; i < offsetSize; ++i){
-		Point neighbour = pt + offsets[i];
-		
-		if (!map.inBounds(neighbour)) continue;
-		setPtSource(neighbour, pt, map);
-			
-		neighbour.color = map.getPtColor(neighbour.x, neighbour.y);
-		if(!visited(neighbour, map)) {
-			markVisit(neighbour, map);
-			LOG_POINT(neighbour, map);
-			LOG_ENDL;
-			toScan.push(neighbour);
-		}
-	}
-	LOG_ENDL;
-}
-
-
 static bool passable(color_t color, const std::vector<color_t>& unpassable) {
 	if (sameColor(color,WALL_COLOR) )return false;
 	for (size_t i = 0; i < unpassable.size(); ++i)
 		if (sameColor(color, unpassable[i])) return false;
 	return true;
 }
-
-
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -530,7 +544,6 @@ Path getFullPathTo(const Point& to, const std::vector<Point>& keys, SourceArray&
 
 ///////////////////////////////////////////////////////////////////
 ////////////////////  "Solvers" ///////////////////////////////////
-
 //
 //
 //	Implements a BFS Scan room by room with updating
@@ -538,7 +551,6 @@ Path getFullPathTo(const Point& to, const std::vector<Point>& keys, SourceArray&
 //		find an exit or scans the reacheble part of the map.
 //	  The idea is to make only one BFS scan of the map.
 //	  TODO:: Figure out some way to merge paths with min scanning
-//	Also, make it more presentable...
 //
 Path np::solve2(np::SourceArray& map) {
 	std::vector<np::color_t> unpassable;

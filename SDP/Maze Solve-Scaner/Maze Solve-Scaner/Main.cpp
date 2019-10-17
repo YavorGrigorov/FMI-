@@ -8,6 +8,7 @@
 #include "ImageLoader.h"
 #include "MazeSolver.h"
 
+//See how debug was enabled
 #undef LOG
 
 int main(int argc, char* argv[]) {
