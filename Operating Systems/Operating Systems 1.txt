@@ -1,0 +1,61 @@
+
+
+
+	ОС Семинар/Практикум
+	
+	//TODO:: (SWI-Prolog || Strawberry-Prolog) & 
+	//	R-нещо-си да свалиш + Linux + Vim + WINE
+	//	+ more
+	//END_TODO
+	//LOOK_UP:: Programming in Linux cmd interpreter +
+	//	Software and Hardware Virtualization + C Programming +
+	//	Stream buffer & clearing + Linux and .exe format +
+	//	PuTTY (pseudo terminal)
+	//END_LOOK_UP
+	
+	Контролни почти всяко упражнение
+	
+	Материали:
+		newkis.fmi.uni-sofia.bg/~svi/os
+	
+	Linux
+
+	-File system
+		Main directory (root) :: /
+		//System directories
+		Binary files :: bin   // Executables
+		etc                   // os files
+		Devices :: dev		  // basicly drivers
+		...
+		home: 				  //used to be users
+		// example
+			student:
+				file1
+			Inf:
+				file
+		
+		Special files: 
+			;directories
+			;links //somehow better than Windows shourtcuts
+		Regular files: files //.txt ...
+		Linux is case sensitive // Windows is not 
+		File names:
+			Full: from / to file
+				ex: /home/Inf/file
+					 
+			Relative: from curr dir to file
+				ex: curr = Inf dest = file 
+					curr = Inf dest = ../student/file1
+					if it is in curr dir
+					this is almost full name /// or sth like that
+					./file
+			Unknown dest: searches for specified in all dirs
+				ex: ~/file
+			
+	-Some cmds
+		exit
+		cd
+		ls
+		pwd   //print working directory
+		
+			

@@ -1,0 +1,48 @@
+
+
+	Функционално програмиране
+	
+	
+	
+	Skim // Lisp for learning (primaraly)
+		DrRacket // IDE
+	
+	(define (<name> <param1> <param2> ...) 
+			(<body>)
+	)
+	
+	Фибоначи
+	//Armyanov style
+	//I v.
+	(define (fib n)
+		(if (< n 2) 1
+			(+ (fib (- n 2)) (fib (- n 1)))
+		)
+	)
+	//II v.
+	(define (fib1 n n1 n2)
+		(if (> n 0) n1
+			(fib1 (- n 1) n2 (+ n1 n2))
+		)
+	)
+	(define (fib n)
+		(if (< n 2) 1
+			(fib1 (n - 2) 1 1)
+		)
+	)
+	//IIv Armyanov
+	(define (fib1 n x n1 n2)
+		(if (= n x) (+ n1 n2)
+			(fib1 n (+ x 1) (+ n1 n2) n1)
+		)
+	)
+	(define (fib n)
+		(if (< n 2) 1
+			(fib1 n 2 1 1)
+		)
+	)
+	
+	//за вкъщи
+	// квадратно у-ние
+	// виж си свойто дали е вярно
+	//
