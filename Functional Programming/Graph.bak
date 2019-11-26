@@ -1,0 +1,57 @@
+#lang racket
+
+; Util::
+(define (member? el l)
+    (if (null? l) #f
+        (or (eqv? el (car l)) 
+            (member? el (cdr l)))
+    )
+)
+
+
+; Graph G = (V, E) where
+;   V = {v1, v2, .., vn | where vi is vertex}
+;   E = { (u, v) from VxV } is subset of VxV
+;
+;   I v.
+;   :: (v1 v2 .. vn) ( (vi1 . vi2) (vi3 . vi4) ...)
+;
+(define (make-graph1 V E) (cons V E))
+
+;   II v.
+;  ((v1 . (vi1 vi2 .. vik)) (v2 . (...)) ... (vn . (...)))
+(define (make-graph2 ))
+
+(define (kids v) (cdr v))
+
+(define (edge? u v) (member? v (cdr u)))
+
+(define (add-edge u v g) 
+    (let ())
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

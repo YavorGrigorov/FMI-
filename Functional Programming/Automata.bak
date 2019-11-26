@@ -1,0 +1,53 @@
+
+#lang racket
+
+
+; Determined automata A = (Alpha, Q, s, delta, F) where
+;       Alpha - finite set of symbols (literals)
+;       Q - finite set of states
+;       s from Q - starting state
+;       F subset of Q - accepting states
+;       delta : QxAlpha -> Q    partial funtion
+;   L(A) = {alpha from Alpha* where delta*(s, alpha) is from F}
+;
+; 
+
+; delta = ( (q1 a1 p1) (q2 a2 p2) ... (qk ak pk)) where k is natural num
+(define (automata Alpha Q s F delta) 
+    (define (del q a) 
+        (define (memb q a dl)
+            (cond ((null? dl) #f)
+                ((and (= (caar dl) q) (= (cadar dl) a)) (caddar dl))
+                (else (memb q a (cdr dl)))
+            )
+        )
+    )
+    (list Alpha Q s F del) ;; in all honesty, Alpha and Q are obselite
+)
+(define (word? alpha A)
+    (let* (Alpha (car A))
+        (Q (cdar A))
+        (s (cddar A))
+        (F (cdar (cddr A)))
+        (delta (car (cddr (cddr A))))
+    )
+    (define (delta* q alpha)
+        (if (null? alpha) (member? q F)
+            (delta* (delta q (car alpha)) (cdr alpha))
+        )
+    )
+    (delta* s alpha)
+)
+
+
+(define (mif cond? do eldo)
+    (or (and (cond?) (do)) 
+        (eldo))
+)
+
+(define (f l)
+    (mif (lambda (x) (null? l)) (lambda (x) l) 
+        (lambda (x) (f (cdr l)))
+    )
+)
+
